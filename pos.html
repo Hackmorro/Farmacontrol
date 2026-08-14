@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>POS - FarmaControl</title>
+<script>(function(){ var t = localStorage.getItem('farmacontrol-theme') || 'dark'; document.documentElement.setAttribute('data-theme', t); })();</script>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/theme.css">
+<style>
+  .card-producto{ background:var(--bg-elev); border:1px solid var(--border-soft); transition:all .2s ease; }
+  .card-producto:hover{ border-color:rgba(16,232,166,.45); transform:translateY(-3px); box-shadow:0 14px 30px -10px rgba(16,232,166,.25); }
+  .btn-add{ background:linear-gradient(135deg, var(--emerald), var(--emerald-dim)); box-shadow:0 6px 18px -4px rgba(16,232,166,.4); }
+  .btn-add:hover{ filter:brightness(1.08); }
+  .btn-checkout{ background:linear-gradient(135deg, var(--emerald), var(--cyan)); box-shadow:0 10px 28px -6px rgba(16,232,166,.4); }
+  .btn-checkout:disabled{ background:var(--disabled-bg); box-shadow:none; color:var(--text-3); cursor:not-allowed; }
+  .cat-btn.active{ background:rgba(16,232,166,.12); color:var(--emerald-ink); border-color:rgba(16,232,166,.35); }
+  .cat-btn{ color:var(--text-2); border:1px solid transparent; transition:all .15s ease; }
+  .cat-btn:hover:not(.active){ background:var(--bg-elev-hover); color:var(--text-1); }
+  .metodo-btn{ border:1px solid var(--border-soft); color:var(--text-2); background:var(--tint-1); }
+  .metodo-btn.active{ border-color:rgba(16,232,166,.5); background:rgba(16,232,166,.08); color:var(--emerald-ink); }
+  .barcode-mini{ display:block; width:100%; height:20px; }
+</style>
+</head>
+<body class="h-screen flex flex-col antialiased grid-glow">
+  <header class="flex justify-between items-center px-8 py-5 border-b flex-wrap gap-3" style="background:var(--bg-surface); border-color:var(--border-soft);">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl flex items-center justify-center text-xl" style="background:linear-gradient(135deg, var(--emerald), var(--cyan));">🏪</div>
+      <h1 class="font-display text-xl font-bold" style="color:var(--text-1);">FarmaControl <span style="color:var(--text-3); font-weight:500;">— Punto de Venta</span></h1>
+    </div>
+    <div class="flex items-center gap-5">
+      <button onclick="toggleTheme()" id="theme-toggle" title="Cambiar tema" class="w-9 h-9 rounded-lg flex items-center justify-center transition glass" style="color:var(--text-2);"><span id="theme-icon">🌙</span></button>
+      <span class="text-xs font-semibold" id="nombre-usuario" style="color:var(--text-2);">—</span>
+      <a href="admin.html" id="link-admin" class="hidden text-xs font-bold transition px-3 py-2 rounded-lg glass" style="color:var(--cyan-ink);">Admin</a>
+      <a href="#" onclick="cerrarSesionGlobal()" class="px-3 py-2 text-xs font-bold rounded-lg transition" style="color:var(--red-ink);">Cerrar Sesión</a>
+    </div>
+  </header>
+
+  <div class="flex flex-1 overflow-hidden">
+    <aside class="w-64 border-r p-6 hidden md:block" style="background:var(--bg-surface); border-color:var(--border-soft);">
+      <h3 class="text-xs font-bold uppercase tracking-wider mb-5" style="color:var(--text-3);">Categorías</h3>
+      <div class="space-y-2" id="categorias">
+        <button onclick="filtrar('Todos')" class="cat-btn active w-full text-left px-4 py-3 rounded-xl font-medium text-sm" id="cat-Todos">Todos</button>
+        <button onclick="filtrar('Medicamentos')" class="cat-btn w-full text-left px-4 py-3 rounded-xl font-medium text-sm" id="cat-Medicamentos">Medicamentos</button>
+        <button onclick="filtrar('Antibioticos')" class="cat-btn w-full text-left px-4 py-3 rounded-xl font-medium text-sm" id="cat-Antibioticos">Antibióticos</button>
+        <button onclick="filtrar('Insumos')" class="cat-btn w-full text-left px-4 py-3 rounded-xl font-medium text-sm" id="cat-Insumos">Insumos</button>
+        <button onclick="filtrar('Bebidas')" class="cat-btn w-full text-left px-4 py-3 rounded-xl font-medium text-sm" id="cat-Bebidas">Bebidas</button>
+      </div>
+    </aside>
+
+    <main class="flex-1 p-8 overflow-y-auto">
+      <div class="flex md:hidden gap-2 overflow-x-auto pb-4 mb-4">
+        <button onclick="filtrar('Todos')" class="cat-btn active px-4 py-2 rounded-full whitespace-nowrap text-sm font-medium" id="mcat-Todos">Todos</button>
+        <button onclick="filtrar('Medicamentos')" class="cat-btn px-4 py-2 rounded-full whitespace-nowrap text-sm font-medium" id="mcat-Medicamentos">Medicamentos</button>
+        <button onclick="filtrar('Antibioticos')" class="cat-btn px-4 py-2 rounded-full whitespace-nowrap text-sm font-medium" id="mcat-Antibioticos">Antibióticos</button>
+        <button onclick="filtrar('Insumos')" class="cat-btn px-4 py-2 rounded-full whitespace-nowrap text-sm font-medium" id="mcat-Insumos">Insumos</button>
+        <button onclick="filtrar('Bebidas')" class="cat-btn px-4 py-2 rounded-full whitespace-nowrap text-sm font-medium" id="mcat-Bebidas">Bebidas</button>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" id="productos-container"></div>
+    </main>
+
+    <aside class="w-96 border-l flex flex-col justify-between h-full" style="background:var(--bg-surface); border-color:var(--border-soft);">
+      <div class="p-6 border-b flex justify-between items-center" style="border-color:var(--border-soft);">
+        <h3 class="font-bold text-lg flex items-center gap-2" style="color:var(--text-1);">🧾 Factura Actual</h3>
+        <button onclick="vaciarCarrito()" id="vaciar-btn" class="text-xs hover:underline font-semibold hidden" style="color:var(--red-ink);">Vaciar todo</button>
+      </div>
+      <div class="flex-1 overflow-y-auto p-6 space-y-4" id="carrito-lista">
+        <div class="text-center py-16" style="color:var(--text-3);"><span class="text-4xl block mb-3">🛒</span><p class="text-sm">El carrito está vacío</p></div>
+      </div>
+      <div class="p-6 border-t space-y-3.5" style="border-color:var(--border-soft); background:var(--tint-1);">
+        <div class="flex justify-between text-sm" style="color:var(--text-2);"><span>Subtotal:</span><span id="subtotal">$0.00</span></div>
+        <div class="flex justify-between text-sm" style="color:var(--text-2);"><span>IVA (16%):</span><span id="iva">$0.00</span></div>
+        <div class="flex justify-between text-xl font-black pt-3" style="color:var(--text-1); border-top:1px dashed var(--border-soft);"><span>Total:</span><span id="total">$0.00</span></div>
+        <button onclick="abrirCheckout()" id="checkout-btn" disabled class="btn-checkout w-full mt-4 py-4 text-slate-950 font-bold rounded-xl transition">Realizar Compra 🚀</button>
+      </div>
+    </aside>
+  </div>
+
+  <div id="modal-pago" class="fixed inset-0 bg-black/60 backdrop-blur-sm items-center justify-center z-50 p-4 hidden">
+    <div class="glass rounded-3xl max-w-md w-full p-7 shadow-2xl" style="background:var(--bg-surface);">
+      <h3 class="text-xl font-bold mb-1.5" style="color:var(--text-1);">Método de Pago</h3>
+      <p class="text-sm mb-6" style="color:var(--text-2);">Selecciona cómo realizará el pago el cliente:</p>
+      <div class="space-y-3 mb-5" id="metodos-pago">
+        <button onclick="selectMetodo('Efectivo')" class="metodo-btn active w-full p-4 rounded-xl text-left font-semibold flex justify-between items-center">Efectivo <span style="color:var(--emerald-ink);">✓</span></button>
+        <button onclick="selectMetodo('Tarjeta de Débito/Crédito')" class="metodo-btn w-full p-4 rounded-xl text-left font-semibold flex justify-between items-center">Tarjeta de Débito/Crédito <span class="hidden" style="color:var(--emerald-ink);">✓</span></button>
+        <button onclick="selectMetodo('Pago Móvil')" class="metodo-btn w-full p-4 rounded-xl text-left font-semibold flex justify-between items-center">Pago Móvil <span class="hidden" style="color:var(--emerald-ink);">✓</span></button>
+      </div>
+      <div class="mb-6">
+        <label class="block text-xs font-bold uppercase tracking-wider mb-2" style="color:var(--text-2);">Cliente (opcional)</label>
+        <input type="text" id="cliente-nombre" placeholder="Consumidor Final" class="input-dark w-full px-4 py-3 rounded-xl text-sm">
+      </div>
+      <div class="flex gap-3">
+        <button onclick="cerrarCheckout()" class="w-1/2 py-3 rounded-xl font-semibold transition glass" style="color:var(--text-2);">Regresar</button>
+        <button onclick="completarCompra()" id="cobrar-btn" class="btn-checkout w-1/2 py-3 text-slate-950 font-bold rounded-xl transition flex items-center justify-center gap-2">Cobrar $0.00</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/supabaseClient.js"></script>
+  <script src="js/guard.js"></script>
+  <script src="js/pos.js"></script>
+</body>
+</html>

@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin - FarmaControl</title>
+<script>(function(){ var t = localStorage.getItem('farmacontrol-theme') || 'dark'; document.documentElement.setAttribute('data-theme', t); })();</script>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/theme.css">
+<style>
+  .producto-card{ transition:all .2s ease; background:var(--bg-elev); border:1px solid var(--border-soft); }
+  .producto-card:hover{ box-shadow:0 14px 30px -10px rgba(167,139,250,.25); transform:translateY(-3px); border-color:rgba(167,139,250,.35); }
+</style>
+</head>
+<body class="min-h-screen flex flex-col antialiased grid-glow">
+
+  <!-- Navbar -->
+  <header class="border-b sticky top-0 z-40" style="background:var(--surface-translucent); border-color:var(--border-soft); backdrop-filter:blur(14px);">
+    <div class="max-w-[1600px] mx-auto px-8 py-5 flex justify-between items-center flex-wrap gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:linear-gradient(135deg, var(--violet), var(--cyan));">
+          <span class="text-slate-950 text-lg font-bold">F</span>
+        </div>
+        <div>
+          <h1 class="font-display text-lg font-bold leading-tight" style="color:var(--text-1);">FarmaControl</h1>
+          <p class="text-[11px] font-medium" style="color:var(--text-3);">Panel de Administración</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <button onclick="toggleTheme()" id="theme-toggle" title="Cambiar tema" class="w-9 h-9 rounded-lg flex items-center justify-center transition glass" style="color:var(--text-2);">
+          <span id="theme-icon">🌙</span>
+        </button>
+        <a href="pos.html" class="px-4 py-2.5 text-sm font-semibold rounded-lg transition glass" style="color:var(--emerald-ink);">🏪 Punto de Venta</a>
+        <div class="w-px h-6" style="background:var(--border-soft);"></div>
+        <div class="w-9 h-9 rounded-full flex items-center justify-center" style="background:rgba(167,139,250,.15);">
+          <span class="text-xs font-bold" id="avatar-inicial" style="color:var(--violet-ink);">A</span>
+        </div>
+        <div class="text-right">
+          <p class="text-sm font-semibold leading-tight" id="nombre-usuario" style="color:var(--text-1);">—</p>
+          <p class="text-[10px]" style="color:var(--text-3);">Administrador</p>
+        </div>
+        <a href="#" onclick="cerrarSesionGlobal()" class="ml-2 px-3 py-2 text-xs font-bold rounded-lg transition" style="color:var(--red-ink);">Salir</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="flex-1 max-w-[1600px] mx-auto w-full px-8 py-10">
+
+    <!-- Stats -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+      <div class="card p-6"><div class="flex items-center justify-between">
+        <div><p class="text-[11px] font-bold uppercase tracking-wider" style="color:var(--text-3);">Productos</p>
+        <p class="font-display text-3xl font-bold mt-1.5" id="stat-productos" style="color:var(--text-1);">0</p></div>
+        <div class="w-12 h-12 rounded-2xl flex items-center justify-center" style="background:rgba(167,139,250,.12);"><span class="text-2xl">📦</span></div>
+      </div></div>
+      <div class="card p-6"><div class="flex items-center justify-between">
+        <div><p class="text-[11px] font-bold uppercase tracking-wider" style="color:var(--text-3);">Stock Crítico</p>
+        <p class="font-display text-3xl font-bold mt-1.5" id="stat-alertas" style="color:var(--red-ink);">0</p></div>
+        <div class="w-12 h-12 rounded-2xl flex items-center justify-center" style="background:rgba(251,113,133,.12);"><span class="text-2xl">⚠️</span></div>
+      </div></div>
+      <div class="card p-6"><div class="flex items-center justify-between">
+        <div><p class="text-[11px] font-bold uppercase tracking-wider" style="color:var(--text-3);">Stock Total</p>
+        <p class="font-display text-3xl font-bold mt-1.5" id="stat-stock" style="color:var(--text-1);">0</p></div>
+        <div class="w-12 h-12 rounded-2xl flex items-center justify-center" style="background:rgba(16,232,166,.12);"><span class="text-2xl">✅</span></div>
+      </div></div>
+      <div class="card p-6"><div class="flex items-center justify-between">
+        <div><p class="text-[11px] font-bold uppercase tracking-wider" style="color:var(--text-3);">Usuarios pendientes</p>
+        <p class="font-display text-3xl font-bold mt-1.5" id="stat-pendientes" style="color:var(--amber-ink);">0</p></div>
+        <div class="w-12 h-12 rounded-2xl flex items-center justify-center" style="background:rgba(251,191,36,.12);"><span class="text-2xl">👤</span></div>
+      </div></div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="flex gap-3 mb-8 flex-wrap">
+      <button onclick="showTab('inventario')" id="tab-inventario" class="tab-btn active px-5 py-2.5 rounded-xl text-sm font-semibold">📦 Inventario</button>
+      <button onclick="showTab('alertas')" id="tab-alertas" class="tab-btn px-5 py-2.5 rounded-xl text-sm font-semibold">⚠️ Alertas (<span id="badge-alertas">0</span>)</button>
+      <button onclick="showTab('movimientos')" id="tab-movimientos" class="tab-btn px-5 py-2.5 rounded-xl text-sm font-semibold">📋 Movimientos</button>
+      <button onclick="showTab('usuarios')" id="tab-usuarios" class="tab-btn px-5 py-2.5 rounded-xl text-sm font-semibold">👥 Usuarios y Permisos (<span id="badge-pendientes">0</span>)</button>
+    </div>
+
+    <!-- Tab: Inventario -->
+    <div id="panel-inventario" class="fade-in">
+      <div class="card overflow-hidden">
+        <div class="p-7 border-b flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4" style="border-color:var(--border-soft);">
+          <div>
+            <h2 class="text-lg font-bold" style="color:var(--text-1);">Inventario de Productos</h2>
+            <p class="text-xs mt-1.5" style="color:var(--text-3);">Gestiona tu catálogo completo de productos farmacéuticos</p>
+          </div>
+          <div class="flex items-center gap-3 w-full sm:w-auto">
+            <div class="relative flex-1 sm:w-72">
+              <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm" style="color:var(--text-3);">🔍</span>
+              <input type="text" id="buscador" placeholder="Buscar por nombre, código..." oninput="filtrarProductos()" class="input-dark w-full pl-10 pr-4 py-2.5 rounded-xl text-sm">
+            </div>
+            <button onclick="abrirModalProducto()" class="btn-primary px-5 py-2.5 text-white text-sm font-bold rounded-xl transition whitespace-nowrap flex items-center gap-2"><span>+</span> Nuevo Producto</button>
+          </div>
+        </div>
+        <div class="p-7">
+          <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6" id="productos-grid"></div>
+          <p id="sin-resultados" class="hidden text-center py-10 text-sm" style="color:var(--text-3);">Sin resultados.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: Alertas -->
+    <div id="panel-alertas" class="hidden fade-in"><div id="alertas-lista" class="space-y-4"></div></div>
+
+    <!-- Tab: Movimientos -->
+    <div id="panel-movimientos" class="hidden fade-in space-y-8">
+      <section class="card p-7">
+        <h3 class="font-bold text-lg mb-5" style="color:var(--text-1);">📝 Registrar Movimiento</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div><label class="block text-xs font-bold uppercase mb-2" style="color:var(--text-3);">Tipo</label>
+            <select id="mov-tipo" class="input-dark w-full px-4 py-2.5 rounded-xl text-sm">
+              <option value="Entrada">Entrada (Compra / Devolución)</option>
+              <option value="Salida">Salida (Daño / Vencimiento / Pérdida)</option>
+            </select></div>
+          <div><label class="block text-xs font-bold uppercase mb-2" style="color:var(--text-3);">Producto</label>
+            <select id="mov-producto" class="input-dark w-full px-4 py-2.5 rounded-xl text-sm"><option value="">Seleccionar...</option></select></div>
+          <div><label class="block text-xs font-bold uppercase mb-2" style="color:var(--text-3);">Cantidad</label>
+            <input type="number" min="1" id="mov-cantidad" placeholder="1" class="input-dark w-full px-4 py-2.5 rounded-xl text-sm"></div>
+          <div><label class="block text-xs font-bold uppercase mb-2" style="color:var(--text-3);">N° Lote</label>
+            <input type="text" id="mov-lote" placeholder="A1024" class="input-dark w-full px-4 py-2.5 rounded-xl text-sm font-mono"></div>
+          <div><label class="block text-xs font-bold uppercase mb-2" style="color:var(--text-3);">Vence (lote)</label>
+            <input type="month" id="mov-vence" class="input-dark w-full px-4 py-2.5 rounded-xl text-sm"></div>
+          <div><label class="block text-xs font-bold uppercase mb-2" style="color:var(--text-3);">Motivo</label>
+            <input type="text" id="mov-motivo" placeholder="Compra proveedor, daño..." class="input-dark w-full px-4 py-2.5 rounded-xl text-sm"></div>
+        </div>
+        <div class="mt-6 flex justify-end">
+          <button onclick="registrarMovimiento()" class="btn-primary px-6 py-2.5 text-white text-sm font-bold rounded-xl transition">Registrar Movimiento</button>
+        </div>
+      </section>
+      <section class="card overflow-hidden">
+        <div class="p-7 border-b" style="border-color:var(--border-soft);"><h3 class="font-bold text-lg" style="color:var(--text-1);">📊 Historial</h3></div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead><tr class="uppercase text-xs font-bold border-b" style="color:var(--text-3); border-color:var(--border-soft); background:var(--tint-1);">
+              <th class="p-4 pl-7">Fecha</th><th class="p-4">Tipo</th><th class="p-4">Producto</th><th class="p-4">Lote</th><th class="p-4">Cantidad</th><th class="p-4">Motivo</th>
+            </tr></thead>
+            <tbody id="tabla-movimientos"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <!-- Tab: Usuarios y Permisos -->
+    <div id="panel-usuarios" class="hidden fade-in">
+      <div class="card overflow-hidden">
+        <div class="p-7 border-b" style="border-color:var(--border-soft);">
+          <h2 class="text-lg font-bold" style="color:var(--text-1);">Usuarios y Permisos</h2>
+          <p class="text-xs mt-1.5" style="color:var(--text-3);">Tú decides quién entra: asigna Cajero (solo Punto de Venta) o Administrador (todo el sistema).</p>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead><tr class="uppercase text-xs font-bold border-b" style="color:var(--text-3); border-color:var(--border-soft); background:var(--tint-1);">
+              <th class="p-4 pl-7">Usuario</th><th class="p-4">Cédula</th><th class="p-4">Teléfono</th><th class="p-4">Rol actual</th><th class="p-4 pr-7">Asignar permiso</th>
+            </tr></thead>
+            <tbody id="tabla-usuarios"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Modal Nuevo/Editar Producto -->
+  <div id="modal-producto" class="fixed inset-0 bg-black/60 backdrop-blur-sm items-center justify-center z-50 p-4 hidden">
+    <div class="glass rounded-2xl max-w-lg w-full p-8 shadow-2xl max-h-[90vh] overflow-y-auto fade-in" style="background:var(--bg-surface);">
+      <div class="flex items-center gap-3 mb-7">
+        <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:rgba(167,139,250,.12);"><span class="text-lg" id="modal-producto-icono">➕</span></div>
+        <h3 class="text-xl font-bold" id="modal-producto-titulo" style="color:var(--text-1);">Nuevo Producto</h3>
+      </div>
+      <input type="hidden" id="prod-id">
+      <div class="space-y-4">
+        <div><label class="block text-xs font-bold uppercase tracking-wide mb-2" style="color:var(--text-2);">Nombre *</label>
+          <input type="text" id="prod-nombre" placeholder="Ej: Amoxicilina 500mg" class="input-dark w-full px-4 py-3 rounded-xl text-sm"></div>
+        <div class="grid grid-cols-2 gap-4">
+          <div><label class="block text-xs font-bold uppercase tracking-wide mb-2" style="color:var(--text-2);">Categoría</label>
+            <select id="prod-categoria" class="input-dark w-full px-4 py-3 rounded-xl text-sm">
+              <option>Medicamentos</option><option>Antibioticos</option><option>Insumos</option><option>Bebidas</option>
+            </select></div>
+          <div><label class="block text-xs font-bold uppercase tracking-wide mb-2" style="color:var(--text-2);">Precio ($) *</label>
+            <input type="number" step="0.01" min="0" id="prod-precio" placeholder="0.00" class="input-dark w-full px-4 py-3 rounded-xl text-sm"></div>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div><label class="block text-xs font-bold uppercase tracking-wide mb-2" style="color:var(--text-2);">Código de Barra</label>
+            <input type="text" id="prod-barra" placeholder="7501234567890" class="input-dark w-full px-4 py-3 rounded-xl text-sm font-mono"></div>
+          <div><label class="block text-xs font-bold uppercase tracking-wide mb-2" style="color:var(--text-2);">Stock Mínimo</label>
+            <input type="number" min="0" id="prod-minimo" placeholder="10" class="input-dark w-full px-4 py-3 rounded-xl text-sm"></div>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div><label class="block text-xs font-bold uppercase tracking-wide mb-2" style="color:var(--text-2);">🏭 Fabricante</label>
+            <input type="text" id="prod-fabricante" placeholder="Laboratorios X" class="input-dark w-full px-4 py-3 rounded-xl text-sm"></div>
+          <div><label class="block text-xs font-bold uppercase tracking-wide mb-2" style="color:var(--text-2);">📦 Proveedor</label>
+            <input type="text" id="prod-proveedor" placeholder="Distribuidora Y" class="input-dark w-full px-4 py-3 rounded-xl text-sm"></div>
+        </div>
+        <div><label class="block text-xs font-bold uppercase tracking-wide mb-2" style="color:var(--text-2);">📅 Fecha de Laboración</label>
+          <input type="date" id="prod-laboracion" class="input-dark w-full px-4 py-3 rounded-xl text-sm"></div>
+        <div id="lote-inicial-wrap" class="pt-5" style="border-top:1px solid var(--border-soft);">
+          <h4 class="text-sm font-bold mb-3" style="color:var(--text-1);">Lote Inicial</h4>
+          <div class="grid grid-cols-3 gap-3">
+            <div><label class="block text-[10px] font-bold uppercase mb-1.5" style="color:var(--text-3);">N° Lote</label><input type="text" id="prod-lote-numero" placeholder="A1024" class="input-dark w-full px-3 py-2.5 rounded-xl text-sm"></div>
+            <div><label class="block text-[10px] font-bold uppercase mb-1.5" style="color:var(--text-3);">Vence</label><input type="month" id="prod-lote-vence" class="input-dark w-full px-3 py-2.5 rounded-xl text-sm"></div>
+            <div><label class="block text-[10px] font-bold uppercase mb-1.5" style="color:var(--text-3);">Cantidad</label><input type="number" min="0" id="prod-lote-cantidad" placeholder="0" class="input-dark w-full px-3 py-2.5 rounded-xl text-sm"></div>
+          </div>
+        </div>
+      </div>
+      <div class="flex gap-3 mt-8">
+        <button onclick="cerrarModal('modal-producto')" class="flex-1 py-3 font-semibold rounded-xl transition glass" style="color:var(--text-2);">Cancelar</button>
+        <button onclick="guardarProducto()" class="btn-primary flex-1 py-3 text-white font-bold rounded-xl transition">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Stock -->
+  <div id="modal-stock" class="fixed inset-0 bg-black/60 backdrop-blur-sm items-center justify-center z-50 p-4 hidden">
+    <div class="glass rounded-2xl max-w-md w-full p-8 shadow-2xl fade-in" style="background:var(--bg-surface);">
+      <h3 class="text-xl font-bold mb-1" style="color:var(--text-1);">📦 Ajustar Stock</h3>
+      <p class="text-xs mb-5" id="stock-info" style="color:var(--text-3);"></p>
+      <div id="stock-lotes-actuales" class="space-y-2 mb-5"></div>
+      <div class="grid grid-cols-2 gap-3 mb-4">
+        <div><label class="block text-[10px] font-bold uppercase mb-1.5" style="color:var(--text-3);">N° Lote (opcional)</label><input type="text" id="stock-lote" class="input-dark w-full px-3 py-2.5 rounded-xl text-sm"></div>
+        <div><label class="block text-[10px] font-bold uppercase mb-1.5" style="color:var(--text-3);">Vence</label><input type="month" id="stock-vence" class="input-dark w-full px-3 py-2.5 rounded-xl text-sm"></div>
+      </div>
+      <label class="block text-xs font-bold uppercase mb-2" style="color:var(--text-2);">Cantidad (+ entrada / - salida)</label>
+      <input type="number" id="stock-cantidad" value="0" class="input-dark w-full px-4 py-3 rounded-xl text-sm mb-4">
+      <label class="block text-xs font-bold uppercase mb-2" style="color:var(--text-2);">Motivo</label>
+      <input type="text" id="stock-motivo" placeholder="Ajuste manual" class="input-dark w-full px-4 py-3 rounded-xl text-sm mb-6">
+      <div class="flex gap-3">
+        <button onclick="cerrarModal('modal-stock')" class="flex-1 py-3 font-semibold rounded-xl transition glass" style="color:var(--text-2);">Cancelar</button>
+        <button onclick="confirmarStock()" class="btn-primary flex-1 py-3 text-white font-bold rounded-xl transition">Confirmar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Código de barras -->
+  <div id="modal-barcode" class="fixed inset-0 bg-black/60 backdrop-blur-sm items-center justify-center z-50 p-4 hidden">
+    <div class="glass rounded-2xl max-w-sm w-full p-8 shadow-2xl text-center fade-in" style="background:var(--bg-surface);">
+      <h3 class="text-lg font-bold mb-1" id="barcode-producto-nombre" style="color:var(--text-1);"></h3>
+      <p class="text-xs font-mono mb-4" id="barcode-numero" style="color:var(--text-3);"></p>
+      <svg id="barcode-display" class="mx-auto"></svg>
+      <button onclick="cerrarModal('modal-barcode')" class="btn-primary w-full py-3 text-white font-bold rounded-xl transition mt-6">Cerrar</button>
+    </div>
+  </div>
+
+  <script src="js/supabaseClient.js"></script>
+  <script src="js/guard.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>

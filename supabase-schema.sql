@@ -1,0 +1,239 @@
+-- =============================================================================
+-- FarmaControl — Esquema de Supabase (Postgres)
+-- =============================================================================
+-- Cómo usar este archivo:
+--   1. Entra a tu proyecto en https://app.supabase.com
+--   2. Ve a "SQL Editor" (menú izquierdo) → "New query"
+--   3. Pega TODO este archivo y dale a "Run"
+--   4. Revisa la sección final para crear tu primer usuario administrador
+-- =============================================================================
+
+
+-- -----------------------------------------------------------------------------
+-- 1. TABLA DE PERFILES (extiende auth.users con los datos del formulario
+--    de registro + el sistema de permisos/roles)
+-- -----------------------------------------------------------------------------
+create table if not exists perfiles (
+  id               uuid primary key references auth.users(id) on delete cascade,
+  nombre           text not null,
+  apellido         text not null,
+  tipo_cedula      text not null default 'V' check (tipo_cedula in ('V','E')),
+  cedula           text not null,
+  telefono         text,
+  fecha_nacimiento date,
+  rol              text not null default 'sin_permisos'
+                     check (rol in ('sin_permisos','cajero','administrador')),
+  creado_en        timestamptz not null default now()
+);
+
+comment on table perfiles is 'Datos de ficha + rol/permisos de cada usuario. rol se asigna manualmente por un administrador.';
+comment on column perfiles.rol is 'sin_permisos = recién registrado, esperando aprobación. cajero = solo Punto de Venta. administrador = Inventario + POS + gestión de usuarios.';
+
+
+-- -----------------------------------------------------------------------------
+-- 2. TABLAS DEL SISTEMA (equivalentes a las de farmacontrol.db)
+-- -----------------------------------------------------------------------------
+create table if not exists productos (
+  id                bigint generated always as identity primary key,
+  nombre            text not null,
+  categoria         text not null default 'Medicamentos',
+  precio            numeric(10,2) not null default 0,
+  minimo            integer not null default 0,
+  codigo_barra      text default '',
+  fecha_laboracion  date,
+  fabricante        text default '',
+  proveedor         text default '',
+  creado_en         timestamptz not null default now()
+);
+
+create table if not exists lotes (
+  id                bigint generated always as identity primary key,
+  producto_id       bigint not null references productos(id) on delete cascade,
+  producto_nombre   text not null default '',
+  numero            text not null,
+  vence             date not null,
+  cantidad          integer not null default 0
+);
+
+create table if not exists movimientos (
+  id                bigint generated always as identity primary key,
+  fecha             timestamptz not null default now(),
+  tipo              text not null check (tipo in ('Entrada','Salida')),
+  producto_id       bigint references productos(id) on delete set null,
+  producto          text not null,
+  cantidad          integer not null,
+  lote              text default '',
+  motivo            text default '',
+  usuario           text default ''
+);
+
+create table if not exists facturas (
+  id                bigint generated always as identity primary key,
+  folio             text unique not null,
+  fecha             timestamptz not null default now(),
+  cliente           text default 'Consumidor Final',
+  cajero            text default '',
+  metodo_pago       text not null default 'Efectivo',
+  subtotal          numeric(10,2) not null,
+  iva               numeric(10,2) not null,
+  total             numeric(10,2) not null,
+  items             jsonb not null
+);
+
+create index if not exists idx_lotes_producto on lotes(producto_id);
+create index if not exists idx_movimientos_producto on movimientos(producto_id);
+
+
+-- -----------------------------------------------------------------------------
+-- 3. FUNCIONES AUXILIARES (para las políticas de seguridad)
+-- -----------------------------------------------------------------------------
+-- SECURITY DEFINER: se ejecutan con permisos elevados para poder leer la
+-- tabla perfiles sin caer en recursión infinita de RLS.
+
+create or replace function is_admin()
+returns boolean
+language sql security definer set search_path = public stable
+as $$
+  select exists (
+    select 1 from perfiles where id = auth.uid() and rol = 'administrador'
+  );
+$$;
+
+create or replace function is_staff()
+returns boolean
+language sql security definer set search_path = public stable
+as $$
+  select exists (
+    select 1 from perfiles where id = auth.uid() and rol in ('administrador','cajero')
+  );
+$$;
+
+-- Evita que un usuario se auto-asigne un rol distinto al que ya tiene.
+-- Solo un administrador (a través de is_admin()) puede cambiar el rol de otros.
+create or replace function prevent_rol_escalation()
+returns trigger
+language plpgsql security definer set search_path = public
+as $$
+begin
+  if NEW.rol is distinct from OLD.rol and not is_admin() then
+    NEW.rol := OLD.rol;
+  end if;
+  return NEW;
+end;
+$$;
+
+drop trigger if exists trg_prevent_rol_escalation on perfiles;
+create trigger trg_prevent_rol_escalation
+  before update on perfiles
+  for each row execute function prevent_rol_escalation();
+
+
+-- -----------------------------------------------------------------------------
+-- 4. ROW LEVEL SECURITY (RLS) — activar en todas las tablas
+-- -----------------------------------------------------------------------------
+alter table perfiles    enable row level security;
+alter table productos   enable row level security;
+alter table lotes       enable row level security;
+alter table movimientos enable row level security;
+alter table facturas    enable row level security;
+
+-- ===== perfiles =====
+drop policy if exists "ver_propio_perfil_o_admin" on perfiles;
+create policy "ver_propio_perfil_o_admin" on perfiles
+  for select using (auth.uid() = id or is_admin());
+
+drop policy if exists "crear_propio_perfil" on perfiles;
+create policy "crear_propio_perfil" on perfiles
+  for insert with check (auth.uid() = id);
+
+drop policy if exists "actualizar_propio_perfil_o_admin" on perfiles;
+create policy "actualizar_propio_perfil_o_admin" on perfiles
+  for update using (auth.uid() = id or is_admin());
+
+-- ===== productos (solo admin escribe, todo el staff lee) =====
+drop policy if exists "staff_lee_productos" on productos;
+create policy "staff_lee_productos" on productos
+  for select using (is_staff());
+
+drop policy if exists "admin_escribe_productos" on productos;
+create policy "admin_escribe_productos" on productos
+  for all using (is_admin()) with check (is_admin());
+
+-- ===== lotes =====
+drop policy if exists "staff_lee_lotes" on lotes;
+create policy "staff_lee_lotes" on lotes
+  for select using (is_staff());
+
+drop policy if exists "admin_escribe_lotes" on lotes;
+create policy "admin_escribe_lotes" on lotes
+  for all using (is_admin()) with check (is_admin());
+
+-- ===== movimientos (el staff puede insertar —ventas del POS y ajustes—, solo se lee) =====
+drop policy if exists "staff_lee_movimientos" on movimientos;
+create policy "staff_lee_movimientos" on movimientos
+  for select using (is_staff());
+
+drop policy if exists "staff_inserta_movimientos" on movimientos;
+create policy "staff_inserta_movimientos" on movimientos
+  for insert with check (is_staff());
+
+-- ===== facturas (cajero y admin generan y ven facturas) =====
+drop policy if exists "staff_lee_facturas" on facturas;
+create policy "staff_lee_facturas" on facturas
+  for select using (is_staff());
+
+drop policy if exists "staff_inserta_facturas" on facturas;
+create policy "staff_inserta_facturas" on facturas
+  for insert with check (is_staff());
+
+
+-- -----------------------------------------------------------------------------
+-- 5. DATOS DE DEMOSTRACIÓN (los mismos 4 productos que trae FarmaControl)
+--    Se insertan solo si la tabla productos está vacía.
+-- -----------------------------------------------------------------------------
+do $$
+declare
+  v_count integer;
+  v_id bigint;
+begin
+  select count(*) into v_count from productos;
+  if v_count = 0 then
+
+    insert into productos (nombre, categoria, precio, minimo, codigo_barra, fecha_laboracion, fabricante, proveedor)
+    values ('Amoxicilina 500mg','Antibioticos',8.50,10,'7501234567890','2025-06-15','Laboratorios Bago','Distribuidora Medica SA')
+    returning id into v_id;
+    insert into lotes (producto_id, producto_nombre, numero, vence, cantidad) values (v_id, 'Amoxicilina 500mg', 'A1024', '2028-12-01', 3);
+
+    insert into productos (nombre, categoria, precio, minimo, codigo_barra, fecha_laboracion, fabricante, proveedor)
+    values ('Paracetamol 500mg','Medicamentos',2.50,15,'7502345678901','2025-09-20','Genfar','Farmacorp')
+    returning id into v_id;
+    insert into lotes (producto_id, producto_nombre, numero, vence, cantidad) values (v_id, 'Paracetamol 500mg', 'B2091', '2029-06-01', 45);
+
+    insert into productos (nombre, categoria, precio, minimo, codigo_barra, fecha_laboracion, fabricante, proveedor)
+    values ('Ibuprofeno 400mg','Medicamentos',3.10,15,'7503456789012','2025-03-10','Pfizer','Distribuidora Medica SA')
+    returning id into v_id;
+    insert into lotes (producto_id, producto_nombre, numero, vence, cantidad) values (v_id, 'Ibuprofeno 400mg', 'C3150', '2028-03-01', 6);
+
+    insert into productos (nombre, categoria, precio, minimo, codigo_barra, fecha_laboracion, fabricante, proveedor)
+    values ('Suero Fisiologico 500ml','Insumos',1.80,5,'7504567890123','2025-11-05','Baxter','MediSupply')
+    returning id into v_id;
+    insert into lotes (producto_id, producto_nombre, numero, vence, cantidad) values (v_id, 'Suero Fisiologico 500ml', 'D4087', '2027-11-01', 15);
+
+  end if;
+end $$;
+
+
+-- =============================================================================
+-- 6. CÓMO CREARTE A TI MISMO COMO ADMINISTRADOR (léelo, no se ejecuta solo)
+-- =============================================================================
+-- Paso 1: Regístrate normalmente desde la página web (index.html) con tu
+--         correo real. Tu cuenta quedará con rol = 'sin_permisos'.
+-- Paso 2: Vuelve a este SQL Editor y ejecuta (cambia el correo por el tuyo):
+--
+--   update perfiles set rol = 'administrador'
+--   where id = (select id from auth.users where email = 'tu-correo@ejemplo.com');
+--
+-- Con eso ya puedes entrar como administrador y desde el panel de
+-- "Usuarios" asignarle rol a todos los demás (cajero / administrador)
+-- sin volver a tocar el SQL Editor nunca más.
+-- =============================================================================

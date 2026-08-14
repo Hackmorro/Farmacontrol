@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FarmaControl</title>
+<script>(function(){ var t = localStorage.getItem('farmacontrol-theme') || 'dark'; document.documentElement.setAttribute('data-theme', t); })();</script>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="stylesheet" href="css/theme.css">
+</head>
+<body class="min-h-screen flex items-center justify-center antialiased grid-glow">
+  <div class="text-center">
+    <div class="spinner mx-auto mb-4" style="width:32px;height:32px;border-color:rgba(167,139,250,.25);border-top-color:var(--violet);"></div>
+    <p class="text-sm" style="color:var(--text-2);">Verificando tu cuenta...</p>
+  </div>
+
+  <script src="js/supabaseClient.js"></script>
+  <script>
+    (async () => {
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if (!session) { window.location.href = 'index.html'; return; }
+
+      const { data: perfil, error } = await supabaseClient
+        .from('perfiles')
+        .select('rol')
+        .eq('id', session.user.id)
+        .maybeSingle();
+
+      if (error || !perfil) { window.location.href = 'pendiente.html'; return; }
+
+      if (perfil.rol === 'administrador') window.location.href = 'admin.html';
+      else if (perfil.rol === 'cajero') window.location.href = 'pos.html';
+      else window.location.href = 'pendiente.html';
+    })();
+  </script>
+</body>
+</html>

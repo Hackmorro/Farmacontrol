@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FarmaControl</title>
+<script>(function(){ var t = localStorage.getItem('farmacontrol-theme') || 'dark'; document.documentElement.setAttribute('data-theme', t); })();</script>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/theme.css">
+<style>
+  .scanline{ position:absolute; inset:0; background:linear-gradient(180deg, transparent 0%, rgba(16,232,166,.06) 50%, transparent 100%); background-size:100% 6px; animation:scan 9s linear infinite; }
+  @keyframes scan{ 0%{background-position:0 0;} 100%{background-position:0 600px;} }
+  .pulse-dot{ animation:pulse 1.6s ease-in-out infinite; }
+  @keyframes pulse{ 0%,100%{opacity:1;} 50%{opacity:.35;} }
+</style>
+</head>
+<body class="min-h-screen flex antialiased grid-glow">
+
+  <div class="flex flex-col justify-center w-full px-6 py-12 md:w-1/2 lg:px-16 xl:px-20 relative">
+    <div class="mx-auto w-full max-w-md">
+
+      <div class="flex items-center justify-between mb-8">
+        <div class="flex items-center gap-3">
+          <div class="w-11 h-11 rounded-2xl flex items-center justify-center text-xl" style="background:linear-gradient(135deg, var(--emerald), var(--cyan)); box-shadow:0 8px 24px -6px rgba(16,232,166,.5);">💊</div>
+          <span class="font-display text-2xl font-bold tracking-tight" style="color:var(--text-1);">Farma<span style="color:var(--emerald-ink);">Control</span></span>
+        </div>
+        <button onclick="toggleTheme()" id="theme-toggle" title="Cambiar tema" class="w-10 h-10 rounded-xl flex items-center justify-center transition glass" style="color:var(--text-2);">
+          <span id="theme-icon">🌙</span>
+        </button>
+      </div>
+
+      <!-- ===================== LOGIN ===================== -->
+      <div id="vista-login">
+        <div class="flex border-b mb-8" style="border-color:var(--border-soft);">
+          <button onclick="mostrarVista('login')" class="w-1/2 pb-4 text-sm font-bold border-b-2 transition" style="border-color:var(--emerald); color:var(--emerald-ink);">Iniciar Sesión</button>
+          <button onclick="mostrarVista('registro')" class="w-1/2 pb-4 text-sm font-bold transition" style="color:var(--text-2);">Registrarse</button>
+        </div>
+        <h2 class="font-display text-2xl font-bold tracking-tight mb-2" style="color:var(--text-1);">¡Hola de nuevo!</h2>
+        <p class="text-sm mb-7" style="color:var(--text-2);">Gestiona inventarios, ventas y cajas registradoras en tiempo real.</p>
+
+        <div id="login-msg" class="hidden p-4 mb-5 text-sm rounded-2xl items-center gap-2"></div>
+
+        <form id="form-login" class="space-y-5" onsubmit="return false;">
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider mb-2" style="color:var(--text-2);">Correo electrónico</label>
+            <input type="email" id="login-email" required autocomplete="username" placeholder="tucorreo@ejemplo.com" class="input-dark w-full px-4 py-3.5 rounded-2xl text-sm">
+          </div>
+          <div>
+            <div class="flex justify-between items-center mb-2">
+              <label class="block text-xs font-bold uppercase tracking-wider" style="color:var(--text-2);">Contraseña</label>
+              <button type="button" onclick="mostrarVista('recuperar')" class="text-xs font-semibold" style="color:var(--violet-ink);">¿Olvidaste tu contraseña?</button>
+            </div>
+            <input type="password" id="login-password" required autocomplete="current-password" placeholder="••••••••" class="input-dark w-full px-4 py-3.5 rounded-2xl text-sm">
+          </div>
+          <button type="button" onclick="iniciarSesion()" id="btn-login" class="btn-primary w-full py-4 text-white font-bold rounded-2xl transition-all text-sm mt-2 flex items-center justify-center gap-2">Ingresar al Sistema</button>
+        </form>
+      </div>
+
+      <!-- ===================== REGISTRO ===================== -->
+      <div id="vista-registro" class="hidden">
+        <div class="flex border-b mb-8" style="border-color:var(--border-soft);">
+          <button onclick="mostrarVista('login')" class="w-1/2 pb-4 text-sm font-bold transition" style="color:var(--text-2);">Iniciar Sesión</button>
+          <button onclick="mostrarVista('registro')" class="w-1/2 pb-4 text-sm font-bold border-b-2 transition" style="border-color:var(--emerald); color:var(--emerald-ink);">Registrarse</button>
+        </div>
+        <h2 class="font-display text-2xl font-bold tracking-tight mb-2" style="color:var(--text-1);">Únete a FarmaControl</h2>
+        <p class="text-sm mb-6" style="color:var(--text-2);">Completa tus datos. Un administrador te asignará permisos luego de crear tu cuenta.</p>
+
+        <div id="registro-msg" class="hidden p-4 mb-5 text-sm rounded-2xl items-center gap-2"></div>
+
+        <form id="form-registro" class="space-y-4" onsubmit="return false;">
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold uppercase tracking-wider mb-2" style="color:var(--text-2);">Nombre</label>
+              <input type="text" id="reg-nombre" required class="input-dark w-full px-4 py-3 rounded-2xl text-sm">
+            </div>
+            <div>
+              <label class="block text-xs font-bold uppercase tracking-wider mb-2" style="color:var(--text-2);">Apellido</label>
+              <input type="text" id="reg-apellido" required class="input-dark w-full px-4 py-3 rounded-2xl text-sm">
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold uppercase tracking-wider mb-2" style="color:var(--text-2);">Cédula</label>
+              <div class="flex gap-2">
+                <select id="reg-tipo-cedula" class="input-dark px-3 py-3 rounded-2xl text-sm">
+                  <option value="V">V-</option>
+                  <option value="E">E-</option>
+                </select>
+                <input type="text" id="reg-cedula" required inputmode="numeric" placeholder="12345678" class="input-dark w-full px-4 py-3 rounded-2xl text-sm">
+              </div>
+            </div>
+            <div>
+              <label class="block text-xs font-bold uppercase tracking-wider mb-2" style="color:var(--text-2);">Teléfono</label>
+              <div class="flex gap-2">
+                <span class="input-dark px-3 py-3 rounded-2xl text-sm" style="color:var(--text-2);">+58</span>
+                <input type="tel" id="reg-telefono" inputmode="numeric" placeholder="4121234567" class="input-dark w-full px-4 py-3 rounded-2xl text-sm">
+              </div>
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider mb-2" style="color:var(--text-2);">Fecha de nacimiento</label>
+            <input type="date" id="reg-nacimiento" required class="input-dark w-full px-4 py-3 rounded-2xl text-sm">
+          </div>
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider mb-2" style="color:var(--text-2);">Correo electrónico</label>
+            <input type="email" id="reg-email" required class="input-dark w-full px-4 py-3 rounded-2xl text-sm">
+          </div>
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider mb-2" style="color:var(--text-2);">Contraseña</label>
+            <input type="password" id="reg-password" required minlength="6" placeholder="Mínimo 6 caracteres" class="input-dark w-full px-4 py-3 rounded-2xl text-sm">
+          </div>
+          <button type="button" onclick="registrarse()" id="btn-registro" class="btn-primary w-full py-4 text-white font-bold rounded-2xl transition-all text-sm mt-2 flex items-center justify-center gap-2">Crear Cuenta</button>
+        </form>
+      </div>
+
+      <!-- ===================== RECUPERAR CONTRASEÑA ===================== -->
+      <div id="vista-recuperar" class="hidden">
+        <h2 class="font-display text-2xl font-bold tracking-tight mb-2" style="color:var(--text-1);">Recuperar contraseña</h2>
+        <p class="text-sm mb-7" style="color:var(--text-2);">Ingresa tu correo y te enviaremos un enlace para crear una nueva contraseña.</p>
+        <div id="recuperar-msg" class="hidden p-4 mb-5 text-sm rounded-2xl items-center gap-2"></div>
+        <form class="space-y-5" onsubmit="return false;">
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider mb-2" style="color:var(--text-2);">Correo electrónico</label>
+            <input type="email" id="recuperar-email" required class="input-dark w-full px-4 py-3.5 rounded-2xl text-sm">
+          </div>
+          <button type="button" onclick="enviarRecuperacion()" id="btn-recuperar" class="btn-primary w-full py-4 text-white font-bold rounded-2xl transition-all text-sm mt-2 flex items-center justify-center gap-2">Enviar enlace de recuperación</button>
+          <button type="button" onclick="mostrarVista('login')" class="w-full py-2 text-sm font-semibold" style="color:var(--text-2);">← Volver a Iniciar sesión</button>
+        </form>
+      </div>
+
+      <!-- ===================== CREAR NUEVA CONTRASEÑA (llega por el enlace del correo) ===================== -->
+      <div id="vista-nueva-clave" class="hidden">
+        <h2 class="font-display text-2xl font-bold tracking-tight mb-2" style="color:var(--text-1);">Crear nueva contraseña</h2>
+        <p class="text-sm mb-7" style="color:var(--text-2);">Escribe tu nueva contraseña para tu cuenta.</p>
+        <div id="nueva-clave-msg" class="hidden p-4 mb-5 text-sm rounded-2xl items-center gap-2"></div>
+        <form class="space-y-5" onsubmit="return false;">
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider mb-2" style="color:var(--text-2);">Nueva contraseña</label>
+            <input type="password" id="nueva-clave1" required minlength="6" class="input-dark w-full px-4 py-3.5 rounded-2xl text-sm">
+          </div>
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider mb-2" style="color:var(--text-2);">Confirmar contraseña</label>
+            <input type="password" id="nueva-clave2" required minlength="6" class="input-dark w-full px-4 py-3.5 rounded-2xl text-sm">
+          </div>
+          <button type="button" onclick="actualizarContrasena()" id="btn-nueva-clave" class="btn-primary w-full py-4 text-white font-bold rounded-2xl transition-all text-sm mt-2 flex items-center justify-center gap-2">Actualizar contraseña</button>
+        </form>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="hidden md:block w-1/2 relative overflow-hidden" style="background-image:url('assets/login-bg.png'); background-size:cover; background-position:center;">
+    <div class="absolute inset-0 z-10" style="background:linear-gradient(135deg, rgba(6,11,20,.97) 0%, rgba(5,25,22,.9) 45%, rgba(6,25,28,.75) 100%);"></div>
+    <div class="scanline z-10"></div>
+    <div class="absolute top-16 left-16 right-16 z-20">
+      <span class="pulse-dot w-2 h-2 rounded-full inline-block mr-2" style="background:var(--emerald);"></span>
+      <span class="text-xs font-bold tracking-widest uppercase" style="color:var(--emerald-ink);">Sistema en línea</span>
+    </div>
+    <div class="absolute bottom-16 left-16 right-16 z-20 text-white">
+      <span class="px-3.5 py-1.5 text-xs font-extrabold uppercase tracking-widest rounded-full glass" style="color:var(--emerald-ink);">FarmaControl · Web</span>
+      <p class="font-display text-2xl font-bold mt-5 leading-snug" style="color:var(--text-1);">Control total de tu farmacia,<br>en tiempo real.</p>
+      <p class="text-sm mt-2" style="color:var(--text-2);">Inventario, ventas y facturación desde un solo panel.</p>
+    </div>
+  </div>
+
+  <script src="js/supabaseClient.js"></script>
+  <script src="js/auth.js"></script>
+</body>
+</html>
