@@ -28,20 +28,20 @@
 </style>
 </head>
 <body class="h-screen flex flex-col antialiased grid-glow">
-  <header class="flex justify-between items-center px-8 py-5 border-b flex-wrap gap-3" style="background:var(--bg-surface); border-color:var(--border-soft);">
+  <header class="flex justify-between items-center px-4 md:px-8 py-4 md:py-5 border-b flex-wrap gap-3" style="background:var(--bg-surface); border-color:var(--border-soft);">
     <div class="flex items-center gap-3">
       <div class="w-10 h-10 rounded-xl flex items-center justify-center text-xl" style="background:linear-gradient(135deg, var(--emerald), var(--cyan));">🏪</div>
-      <h1 class="font-display text-xl font-bold" style="color:var(--text-1);">FarmaControl <span style="color:var(--text-3); font-weight:500;">— Punto de Venta</span></h1>
+      <h1 class="font-display text-lg md:text-xl font-bold" style="color:var(--text-1);">FarmaControl <span class="hidden sm:inline" style="color:var(--text-3); font-weight:500;">— Punto de Venta</span></h1>
     </div>
-    <div class="flex items-center gap-5">
+    <div class="flex items-center gap-2 md:gap-5">
       <button onclick="toggleTheme()" id="theme-toggle" title="Cambiar tema" class="w-9 h-9 rounded-lg flex items-center justify-center transition glass" style="color:var(--text-2);"><span id="theme-icon">🌙</span></button>
-      <span class="text-xs font-semibold" id="nombre-usuario" style="color:var(--text-2);">—</span>
+      <span class="hidden sm:inline text-xs font-semibold" id="nombre-usuario" style="color:var(--text-2);">—</span>
       <a href="admin.html" id="link-admin" class="hidden text-xs font-bold transition px-3 py-2 rounded-lg glass" style="color:var(--cyan-ink);">Admin</a>
       <a href="#" onclick="cerrarSesionGlobal()" class="px-3 py-2 text-xs font-bold rounded-lg transition" style="color:var(--red-ink);">Cerrar Sesión</a>
     </div>
   </header>
 
-  <div class="flex flex-1 overflow-hidden">
+  <div class="flex flex-col md:flex-row flex-1 md:overflow-hidden">
     <aside class="w-64 border-r p-6 hidden md:block" style="background:var(--bg-surface); border-color:var(--border-soft);">
       <h3 class="text-xs font-bold uppercase tracking-wider mb-5" style="color:var(--text-3);">Categorías</h3>
       <div class="space-y-2" id="categorias">
@@ -53,7 +53,7 @@
       </div>
     </aside>
 
-    <main class="flex-1 p-8 overflow-y-auto">
+    <main class="flex-1 p-4 md:p-8 md:overflow-y-auto">
       <div class="flex md:hidden gap-2 overflow-x-auto pb-4 mb-4">
         <button onclick="filtrar('Todos')" class="cat-btn active px-4 py-2 rounded-full whitespace-nowrap text-sm font-medium" id="mcat-Todos">Todos</button>
         <button onclick="filtrar('Medicamentos')" class="cat-btn px-4 py-2 rounded-full whitespace-nowrap text-sm font-medium" id="mcat-Medicamentos">Medicamentos</button>
@@ -64,12 +64,12 @@
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" id="productos-container"></div>
     </main>
 
-    <aside class="w-96 border-l flex flex-col justify-between h-full" style="background:var(--bg-surface); border-color:var(--border-soft);">
+    <aside class="w-full md:w-96 border-t md:border-t-0 md:border-l flex flex-col md:h-full" style="background:var(--bg-surface); border-color:var(--border-soft);">
       <div class="p-6 border-b flex justify-between items-center" style="border-color:var(--border-soft);">
         <h3 class="font-bold text-lg flex items-center gap-2" style="color:var(--text-1);">🧾 Factura Actual</h3>
         <button onclick="vaciarCarrito()" id="vaciar-btn" class="text-xs hover:underline font-semibold hidden" style="color:var(--red-ink);">Vaciar todo</button>
       </div>
-      <div class="flex-1 overflow-y-auto p-6 space-y-4" id="carrito-lista">
+      <div class="p-6 space-y-4 max-h-80 overflow-y-auto md:max-h-none md:flex-1" id="carrito-lista">
         <div class="text-center py-16" style="color:var(--text-3);"><span class="text-4xl block mb-3">🛒</span><p class="text-sm">El carrito está vacío</p></div>
       </div>
       <div class="p-6 border-t space-y-3.5" style="border-color:var(--border-soft); background:var(--tint-1);">
