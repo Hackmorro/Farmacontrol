@@ -84,30 +84,30 @@ async function registrarse() {
 
   setCargando('btn-registro', true);
 
-  const { data, error } = await supabaseClient.auth.signUp({ email, password });
+  // Los datos del formulario viajan como "metadata" del usuario. La fila en
+  // la tabla perfiles la crea automáticamente un trigger en la base de datos
+  // (no el navegador), así que funciona igual con o sin confirmación de
+  // correo activada — no depende de que exista una sesión en este momento.
+  const { data, error } = await supabaseClient.auth.signUp({
+    email, password,
+    options: {
+      data: {
+        nombre, apellido,
+        tipo_cedula: tipoCedula,
+        cedula,
+        telefono: telefono ? ('+58' + telefono) : null,
+        fecha_nacimiento: nacimiento
+      }
+    }
+  });
+
+  setCargando('btn-registro', false, 'Crear Cuenta');
+
   if (error) {
-    setCargando('btn-registro', false, 'Crear Cuenta');
     mostrarMensaje('registro-msg', error.message.includes('already registered')
       ? 'Ese correo ya está registrado.' : 'No se pudo crear la cuenta: ' + error.message, 'error');
     return;
   }
-
-  // Si el proyecto tiene confirmación de correo activada, data.user existe
-  // pero la sesión aún no. Igual creamos el perfil: RLS permite insert propio
-  // en cuanto haya sesión (auto-login) o tras confirmar el correo.
-  if (data.user) {
-    await supabaseClient.from('perfiles').insert({
-      id: data.user.id,
-      nombre, apellido,
-      tipo_cedula: tipoCedula,
-      cedula,
-      telefono: telefono ? ('+58' + telefono) : null,
-      fecha_nacimiento: nacimiento,
-      rol: 'sin_permisos'
-    });
-  }
-
-  setCargando('btn-registro', false, 'Crear Cuenta');
 
   if (!data.session) {
     mostrarMensaje('registro-msg', 'Cuenta creada. Revisa tu correo para confirmarla y luego inicia sesión.', 'exito');
