@@ -85,6 +85,42 @@ create index if not exists idx_movimientos_producto on movimientos(producto_id);
 
 
 -- -----------------------------------------------------------------------------
+-- 2.1 CREACIÓN AUTOMÁTICA DEL PERFIL AL REGISTRARSE
+-- -----------------------------------------------------------------------------
+-- IMPORTANTE: si tu proyecto tiene activa la confirmación de correo, en el
+-- momento del registro todavía NO hay sesión activa, así que el navegador
+-- no tiene permiso (RLS) para insertar la fila en "perfiles" directamente.
+-- La solución correcta es crear esa fila desde la propia base de datos,
+-- mediante un trigger sobre auth.users, que se ejecuta con privilegios
+-- elevados (SECURITY DEFINER) y por lo tanto no depende de si hay sesión.
+create or replace function handle_new_user()
+returns trigger
+language plpgsql security definer set search_path = public
+as $$
+begin
+  insert into perfiles (id, nombre, apellido, tipo_cedula, cedula, telefono, fecha_nacimiento, rol)
+  values (
+    new.id,
+    coalesce(new.raw_user_meta_data->>'nombre', ''),
+    coalesce(new.raw_user_meta_data->>'apellido', ''),
+    coalesce(new.raw_user_meta_data->>'tipo_cedula', 'V'),
+    coalesce(new.raw_user_meta_data->>'cedula', ''),
+    new.raw_user_meta_data->>'telefono',
+    nullif(new.raw_user_meta_data->>'fecha_nacimiento', '')::date,
+    'sin_permisos'
+  )
+  on conflict (id) do nothing;
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_handle_new_user on auth.users;
+create trigger trg_handle_new_user
+  after insert on auth.users
+  for each row execute function handle_new_user();
+
+
+-- -----------------------------------------------------------------------------
 -- 3. FUNCIONES AUXILIARES (para las políticas de seguridad)
 -- -----------------------------------------------------------------------------
 -- SECURITY DEFINER: se ejecutan con permisos elevados para poder leer la
@@ -136,6 +172,18 @@ alter table productos   enable row level security;
 alter table lotes       enable row level security;
 alter table movimientos enable row level security;
 alter table facturas    enable row level security;
+
+-- -----------------------------------------------------------------------------
+-- 4.1 PERMISOS DE TABLA (GRANT) — el candado que va ANTES de RLS
+-- -----------------------------------------------------------------------------
+-- RLS solo filtra FILAS dentro de una tabla a la que el rol ya tiene acceso.
+-- Como en la creación del proyecto dejamos "Automatically expose new tables"
+-- SIN marcar (a propósito, por seguridad), Supabase no le da automáticamente
+-- a los roles "authenticated"/"anon" el permiso base para tocar estas tablas
+-- nuevas. Sin este GRANT, cualquier consulta devuelve 403 "Forbidden" ANTES
+-- de siquiera evaluar las políticas de RLS de abajo.
+grant usage on schema public to authenticated;
+grant select, insert, update, delete on perfiles, productos, lotes, movimientos, facturas to authenticated;
 
 -- ===== perfiles =====
 drop policy if exists "ver_propio_perfil_o_admin" on perfiles;
