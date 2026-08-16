@@ -16,7 +16,8 @@ Esta guía asume que **no** tienes experiencia previa con Supabase ni con Netlif
 1. En el menú izquierdo, ve a **SQL Editor** → **New query**.
 2. Abre el archivo `supabase-schema.sql` (incluido en este proyecto), copia **todo** su contenido y pégalo en el editor.
 3. Clic en **Run**. Deberías ver "Success. No rows returned".
-   - Esto crea las tablas `perfiles`, `productos`, `lotes`, `movimientos`, `facturas`, las reglas de seguridad (RLS), y siembra los 4 productos de demostración.
+   - Esto crea las tablas `perfiles`, `productos`, `lotes`, `movimientos`, `facturas`, los permisos de tabla (`GRANT`), las reglas de seguridad por fila (RLS), el trigger que crea automáticamente el perfil de cada usuario nuevo, y siembra los 4 productos de demostración.
+   - Esta versión del script ya incluye las correcciones de los permisos de tabla (`GRANT`) y de la creación automática del perfil vía trigger — si sigues esta guía desde cero para un cliente nuevo, **no deberías encontrarte ningún error de "cuenta pendiente" ni de 403**, ni tener que hacer ningún ajuste manual después.
 
 ### 1.3 Conectar el sitio a tu proyecto
 1. Ve a **Project Settings** (ícono de engranaje) → **API**.
@@ -35,15 +36,33 @@ Esta guía asume que **no** tienes experiencia previa con Supabase ni con Netlif
 3. En **Redirect URLs**, agrega esa misma URL (y también `http://localhost:8080/*` si vas a probar en tu computadora).
 4. (Opcional pero recomendado) Ve a **Authentication** → **Providers** → **Email** y revisa que "Confirm email" esté activado si quieres que los usuarios confirmen su correo antes de entrar.
 
-### 1.5 Crearte como tu propio administrador
-1. Abre tu sitio (local o ya publicado) y **regístrate** normalmente con tu correo real, como cualquier usuario nuevo. Verás la pantalla "Tu cuenta está pendiente de aprobación" — es correcto, así funciona.
-2. Vuelve a Supabase → **SQL Editor** → **New query** y ejecuta (cambiando el correo por el tuyo):
-   ```sql
-   update perfiles set rol = 'administrador'
-   where id = (select id from auth.users where email = 'tu-correo@ejemplo.com');
-   ```
-3. Vuelve al sitio, cierra sesión y entra de nuevo (o dale a "Ya tengo permisos, verificar de nuevo" en la pantalla de espera). Ya entrarás como administrador.
-4. Desde ahí, en la pestaña **"Usuarios y Permisos"** del panel, puedes asignarle rol a todos los demás usuarios sin volver a tocar SQL nunca más.
+### 1.5 El primer registro es automáticamente el administrador
+No tienes que tocar el SQL Editor para esto. En cuanto ejecutaste el `supabase-schema.sql` (Parte 1.2), quedó activa la regla: **la primera persona que se registre en el sitio se convierte automáticamente en administrador**. Todo el que se registre después de esa primera cuenta entra como "sin permisos", esperando aprobación — normal.
+
+Entonces, para arrancar:
+1. Abre tu sitio ya publicado.
+2. Regístrate tú (o el dueño del negocio) como el primer usuario, con sus datos reales.
+3. Esa cuenta entra directo al panel de administrador — sin pantalla de espera, sin SQL, nada manual.
+4. Desde la pestaña **"Usuarios y Permisos"**, ese administrador ya puede asignarle rol a todos los que se registren después.
+
+> ⚠️ Importante: esto solo aplica a la **primera** cuenta que se registre en cada proyecto de Supabase nuevo. Si por error alguien más se registra antes que el dueño, esa persona quedará como administrador en su lugar — en ese caso sí tendrías que corregirlo manualmente por SQL (`update perfiles set rol = 'administrador' where id = (select id from auth.users where email = '...')`, y bajarle el rol al que se coló por error). Por eso, en cada proyecto nuevo, asegúrate de que el dueño sea literalmente la primera persona en registrarse.
+
+---
+
+## PARTE 1.6 — Si vas a vender o alquilar este sistema a otras farmacias
+
+Cada farmacia/cliente necesita su **propio proyecto de Supabase** (su propia base de datos, separada de las demás — así los datos de un cliente nunca se mezclan con los de otro) y, si le vas a dar su propio dominio o subdominio, su **propio despliegue en Netlify/Vercel**. El proceso para cada cliente nuevo es repetir exactamente la Parte 1 y la Parte 2 de esta guía desde cero:
+
+1. Crea un proyecto de Supabase nuevo para ese cliente (Parte 1.1).
+2. Corre el mismo `supabase-schema.sql` sin modificar nada (Parte 1.2) — ya incluye todas las correcciones, así que no deberías necesitar ajustes manuales.
+3. Copia la URL y la anon key de **ese** proyecto (no la tuya) en su copia de `js/supabaseClient.js` (Parte 1.3).
+4. Publica esa copia del sitio en su propio Netlify/Vercel (Parte 2).
+5. Regístrate tú mismo como el primer administrador de esa instancia (Parte 1.5) y desde ahí le entregas el acceso a tu cliente para que asigne los demás roles.
+
+Este proyecto no está diseñado (todavía) para que varias farmacias compartan una sola base de datos con un solo despliegue — cada una vive aislada en su propio proyecto de Supabase. Si más adelante quieres ofrecerlo como un solo sistema multi-cliente (una sola URL para todos, cada quien viendo solo lo suyo), es un cambio de arquitectura más grande y con gusto te ayudo a planearlo cuando llegues a ese punto.
+
+### Si un cliente deja de pagar el alquiler
+Entra al proyecto de Supabase de ese cliente → **Project Settings → General → "Pause project"**. Esto bloquea al instante todo acceso a su sistema (nadie puede iniciar sesión ni usar el POS/inventario) sin borrar ninguno de sus datos. Si vuelve a pagar, entras y le das **"Restore project"** y todo vuelve a funcionar en un par de minutos, tal como estaba.
 
 ---
 
