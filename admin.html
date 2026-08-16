@@ -148,9 +148,12 @@
     <!-- Tab: Usuarios y Permisos -->
     <div id="panel-usuarios" class="hidden fade-in">
       <div class="card overflow-hidden">
-        <div class="p-7 border-b" style="border-color:var(--border-soft);">
-          <h2 class="text-lg font-bold" style="color:var(--text-1);">Usuarios y Permisos</h2>
-          <p class="text-xs mt-1.5" style="color:var(--text-3);">Tú decides quién entra: asigna Cajero (solo Punto de Venta) o Administrador (todo el sistema).</p>
+        <div class="p-7 border-b flex flex-col sm:flex-row justify-between sm:items-center gap-3" style="border-color:var(--border-soft);">
+          <div>
+            <h2 class="text-lg font-bold" style="color:var(--text-1);">Usuarios y Permisos</h2>
+            <p class="text-xs mt-1.5" style="color:var(--text-3);">Tú decides quién entra: asigna Cajero (solo Punto de Venta) o Administrador (todo el sistema).</p>
+          </div>
+          <button onclick="refrescarUsuarios()" id="btn-refrescar-usuarios" class="flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-lg transition glass whitespace-nowrap" style="color:var(--emerald-ink);">🔄 Actualizar lista</button>
         </div>
         <div class="overflow-x-auto">
           <table class="w-full text-left border-collapse">
