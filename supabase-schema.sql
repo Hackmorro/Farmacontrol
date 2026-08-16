@@ -97,7 +97,20 @@ create or replace function handle_new_user()
 returns trigger
 language plpgsql security definer set search_path = public
 as $$
+declare
+  v_rol text;
 begin
+  -- Si todavía no existe NINGÚN perfil en este proyecto, esta es la primera
+  -- persona en registrarse: se convierte automáticamente en administrador
+  -- (el "dueño"), sin necesidad de tocar el SQL Editor. Todo el que se
+  -- registre después de este primer usuario entra como 'sin_permisos',
+  -- como de costumbre, a la espera de que el administrador le asigne rol.
+  if (select count(*) from perfiles) = 0 then
+    v_rol := 'administrador';
+  else
+    v_rol := 'sin_permisos';
+  end if;
+
   insert into perfiles (id, nombre, apellido, tipo_cedula, cedula, telefono, fecha_nacimiento, rol)
   values (
     new.id,
@@ -107,7 +120,7 @@ begin
     coalesce(new.raw_user_meta_data->>'cedula', ''),
     new.raw_user_meta_data->>'telefono',
     nullif(new.raw_user_meta_data->>'fecha_nacimiento', '')::date,
-    'sin_permisos'
+    v_rol
   )
   on conflict (id) do nothing;
   return new;
@@ -197,6 +210,14 @@ create policy "crear_propio_perfil" on perfiles
 drop policy if exists "actualizar_propio_perfil_o_admin" on perfiles;
 create policy "actualizar_propio_perfil_o_admin" on perfiles
   for update using (auth.uid() = id or is_admin());
+
+drop policy if exists "admin_elimina_perfiles" on perfiles;
+create policy "admin_elimina_perfiles" on perfiles
+  for delete using (is_admin() and id <> auth.uid());
+-- "id <> auth.uid()" es una segunda capa de protección a nivel de base de
+-- datos: ni siquiera un administrador puede borrar su propia cuenta desde
+-- aquí (aunque alguien manipulara el código del sitio para saltarse el
+-- botón deshabilitado, la base de datos igual lo rechazaría).
 
 -- ===== productos (solo admin escribe, todo el staff lee) =====
 drop policy if exists "staff_lee_productos" on productos;
