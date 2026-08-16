@@ -156,10 +156,6 @@ async function actualizarContrasena() {
   setTimeout(() => { window.location.href = 'redirigiendo.html'; }, 1500);
 }
 
-// ---------------------------------------------------------------------------
-// Enrutado inicial: si el enlace de recuperación trae el evento
-// PASSWORD_RECOVERY, mostramos directamente el formulario de nueva contraseña.
-// ---------------------------------------------------------------------------
 supabaseClient.auth.onAuthStateChange((event) => {
   if (event === 'PASSWORD_RECOVERY') {
     mostrarVista('nueva-clave');
@@ -169,7 +165,6 @@ supabaseClient.auth.onAuthStateChange((event) => {
 if (location.hash === '#recuperar') mostrarVista('recuperar');
 if (location.hash === '#registro') mostrarVista('registro');
 
-// Si ya hay sesión activa, no tiene sentido quedarse en el login.
 (async () => {
   const { data: { session } } = await supabaseClient.auth.getSession();
   if (session && location.hash !== '#nueva-clave') {

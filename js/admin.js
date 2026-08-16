@@ -73,7 +73,7 @@ async function refrescarUsuarios() {
   await cargarUsuarios();
   renderUsuarios();
   renderStats();
-  if (btn) { btn.disabled = false; btn.innerHTML = icon('refresh','w-4 h-4 inline -mt-0.5') + ' Actualizar lista'; }
+  if (btn) { btn.disabled = false; btn.innerHTML = '🔄 Actualizar lista'; }
 }
 
 // ---------------------------------------------------------------------------
@@ -82,8 +82,8 @@ async function refrescarUsuarios() {
 function lotesColor(vence) {
   const hoy = new Date(); const v = new Date(vence);
   const meses = (v - hoy) / (1000 * 60 * 60 * 24 * 30);
-  if (meses < 0) return 'background:rgba(171,80,73,.1); color:var(--danger-ink);';
-  if (meses < 6) return 'background:rgba(184,135,63,.1); color:var(--warning-ink);';
+  if (meses < 0) return 'background:rgba(251,113,133,.1); color:var(--red-ink);';
+  if (meses < 6) return 'background:rgba(251,191,36,.1); color:var(--amber-ink);';
   return 'background:var(--tint-3); color:var(--text-2);';
 }
 
@@ -98,14 +98,14 @@ function renderProductos() {
     div.innerHTML = `
       <div class="flex items-start justify-between mb-4">
         <div class="flex items-center gap-3">
-          <div class="w-11 h-11 rounded-xl flex items-center justify-center" style="background:${bajo ? 'rgba(171,80,73,.12)' : 'rgba(62,142,119,.12)'};">${bajo ? icon('alert-triangle','w-5 h-5') : icon('package','w-5 h-5')}</div>
+          <div class="w-11 h-11 rounded-xl flex items-center justify-center" style="background:${bajo ? 'rgba(251,113,133,.12)' : 'rgba(167,139,250,.12)'};"><span class="text-lg">${bajo ? '⚠️' : '💊'}</span></div>
           <div><h3 class="font-bold text-sm leading-tight" style="color:var(--text-1);">${escapeHtml(p.nombre)}</h3><p class="text-xs mt-0.5" style="color:var(--text-3);">${escapeHtml(p.categoria)}</p></div>
         </div>
-        <span class="px-2.5 py-1 rounded-lg text-[10px] font-bold" style="${bajo ? 'background:rgba(171,80,73,.12); color:var(--danger-ink);' : 'background:rgba(62,142,119,.12); color:var(--accent-ink);'}">${bajo ? 'BAJO' : 'OK'}</span>
+        <span class="px-2.5 py-1 rounded-lg text-[10px] font-bold" style="${bajo ? 'background:rgba(251,113,133,.12); color:var(--red-ink);' : 'background:rgba(16,232,166,.12); color:var(--emerald-ink);'}">${bajo ? 'BAJO' : 'OK'}</span>
       </div>
       <div class="flex items-end justify-between mb-4">
         <div><p class="text-[10px] uppercase font-bold" style="color:var(--text-3);">Precio</p><p class="font-display text-2xl font-bold" style="color:var(--text-1);">$${Number(p.precio).toFixed(2)}</p></div>
-        <div class="text-right"><p class="text-[10px] uppercase font-bold" style="color:var(--text-3);">Stock</p><p class="font-display text-2xl font-bold" style="color:${bajo ? 'var(--danger)' : 'var(--text-1)'};">${stockTotal(p)}</p></div>
+        <div class="text-right"><p class="text-[10px] uppercase font-bold" style="color:var(--text-3);">Stock</p><p class="font-display text-2xl font-bold" style="color:${bajo ? 'var(--red)' : 'var(--text-1)'};">${stockTotal(p)}</p></div>
       </div>
       <div class="mb-4">
         <p class="text-[10px] uppercase font-bold mb-2" style="color:var(--text-3);">Lotes</p>
@@ -120,10 +120,10 @@ function renderProductos() {
         ${p.proveedor ? `<div class="flex items-center gap-2"><span class="text-[10px] w-16" style="color:var(--text-3);">Surte:</span><span class="text-[11px]" style="color:var(--text-2);">${escapeHtml(p.proveedor)}</span></div>` : ''}
       </div>
       <div class="flex gap-2">
-        <button onclick="abrirStockModal(${p.id})" class="flex-1 py-2.5 text-xs font-bold rounded-xl transition" style="background:rgba(62,142,119,.1); color:var(--accent-ink);">${icon('package','w-4 h-4 inline -mt-0.5')} Stock</button>
-        <button onclick="abrirEditar(${p.id})" class="flex-1 py-2.5 text-xs font-bold rounded-xl transition" style="background:rgba(184,135,63,.1); color:var(--warning-ink);">${icon('pencil','w-4 h-4 inline -mt-0.5')} Editar</button>
-        ${p.codigo_barra ? `<button onclick="abrirBarcodeModal(${p.id})" class="py-2.5 px-3 text-xs font-bold rounded-xl transition" style="background:var(--tint-3); color:var(--text-2);">${icon('scan','w-4 h-4')}</button>` : ''}
-        <button onclick="eliminarProducto(${p.id}, '${escapeHtml(p.nombre)}')" class="py-2.5 px-3 text-xs font-bold rounded-xl transition" style="background:rgba(171,80,73,.1); color:var(--danger-ink);">${icon('trash','w-4 h-4')}</button>
+        <button onclick="abrirStockModal(${p.id})" class="flex-1 py-2.5 text-xs font-bold rounded-xl transition" style="background:rgba(167,139,250,.1); color:var(--violet-ink);">📦 Stock</button>
+        <button onclick="abrirEditar(${p.id})" class="flex-1 py-2.5 text-xs font-bold rounded-xl transition" style="background:rgba(251,191,36,.1); color:var(--amber-ink);">✏️ Editar</button>
+        ${p.codigo_barra ? `<button onclick="abrirBarcodeModal(${p.id})" class="py-2.5 px-3 text-xs font-bold rounded-xl transition" style="background:var(--tint-3); color:var(--text-2);">📊</button>` : ''}
+        <button onclick="eliminarProducto(${p.id}, '${escapeHtml(p.nombre)}')" class="py-2.5 px-3 text-xs font-bold rounded-xl transition" style="background:rgba(251,113,133,.1); color:var(--red-ink);">🗑️</button>
       </div>`;
     grid.appendChild(div);
   });
@@ -148,20 +148,20 @@ function renderAlertas() {
   const cont = document.getElementById('alertas-lista');
   const alertas = productos.filter(p => stockTotal(p) <= p.minimo);
   if (alertas.length === 0) {
-    cont.innerHTML = `<div class="card p-16 text-center"><span class="block mb-4 flex justify-center" style="color:var(--accent-ink);">${icon('check-circle','w-12 h-12')}</span><h3 class="text-lg font-bold mb-2" style="color:var(--text-1);">Todo en orden</h3><p class="text-sm" style="color:var(--text-3);">No hay productos con stock crítico</p></div>`;
+    cont.innerHTML = `<div class="card p-16 text-center"><span class="text-5xl block mb-4">✅</span><h3 class="text-lg font-bold mb-2" style="color:var(--text-1);">Todo en orden</h3><p class="text-sm" style="color:var(--text-3);">No hay productos con stock crítico</p></div>`;
     return;
   }
   cont.innerHTML = alertas.map(p => `
     <div class="card p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
       <div class="flex items-center gap-4">
-        <div class="w-12 h-12 rounded-2xl flex items-center justify-center" style="background:rgba(171,80,73,.12);">${icon('alert-triangle','w-6 h-6')}</div>
+        <div class="w-12 h-12 rounded-2xl flex items-center justify-center" style="background:rgba(251,113,133,.12);"><span class="text-2xl">⚠️</span></div>
         <div>
           <h3 class="font-bold" style="color:var(--text-1);">${escapeHtml(p.nombre)}</h3>
-          <p class="text-xs mt-1" style="color:var(--text-3);">Stock actual: <span class="font-bold" style="color:var(--danger-ink);">${stockTotal(p)}</span> — Mínimo: <span class="font-bold" style="color:var(--text-2);">${p.minimo}</span></p>
+          <p class="text-xs mt-1" style="color:var(--text-3);">Stock actual: <span class="font-bold" style="color:var(--red-ink);">${stockTotal(p)}</span> — Mínimo: <span class="font-bold" style="color:var(--text-2);">${p.minimo}</span></p>
           <p class="text-xs mt-0.5" style="color:var(--text-3);">Proveedor: ${escapeHtml(p.proveedor || 'No registrado')} | Fabricante: ${escapeHtml(p.fabricante || 'No registrado')}</p>
         </div>
       </div>
-      <button onclick="abrirStockModal(${p.id})" class="px-5 py-2.5 text-white text-xs font-bold rounded-xl transition" style="background:var(--danger-dim);">Ajustar Stock</button>
+      <button onclick="abrirStockModal(${p.id})" class="px-5 py-2.5 text-white text-xs font-bold rounded-xl transition" style="background:linear-gradient(135deg, #F43F5E, #E11D48);">Ajustar Stock</button>
     </div>`).join('');
 }
 
@@ -174,7 +174,7 @@ function abrirModalProducto() {
     .forEach(id => document.getElementById('prod-' + id).value = '');
   document.getElementById('prod-categoria').value = 'Medicamentos';
   document.getElementById('modal-producto-titulo').textContent = 'Nuevo Producto';
-  document.getElementById('modal-producto-icono').innerHTML = icon('plus','w-[18px] h-[18px]');
+  document.getElementById('modal-producto-icono').textContent = '➕';
   document.getElementById('lote-inicial-wrap').classList.remove('hidden');
   abrirModal('modal-producto');
 }
@@ -192,7 +192,7 @@ function abrirEditar(id) {
   document.getElementById('prod-proveedor').value = p.proveedor || '';
   document.getElementById('prod-laboracion').value = p.fecha_laboracion || '';
   document.getElementById('modal-producto-titulo').textContent = 'Editar Producto';
-  document.getElementById('modal-producto-icono').innerHTML = icon('pencil', 'w-[18px] h-[18px]');
+  document.getElementById('modal-producto-icono').textContent = '✏️';
   document.getElementById('lote-inicial-wrap').classList.add('hidden');
   abrirModal('modal-producto');
 }
@@ -346,18 +346,18 @@ async function registrarMovimiento() {
 function renderMovimientos() {
   const tbody = document.getElementById('tabla-movimientos');
   if (movimientos.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="6" class="p-16 text-center" style="color:var(--text-3);"><span class="block mb-3 flex justify-center">${icon('inbox','w-10 h-10')}</span>No hay movimientos registrados</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" class="p-16 text-center" style="color:var(--text-3);"><span class="text-4xl block mb-3">📭</span>No hay movimientos registrados</td></tr>`;
     return;
   }
   tbody.innerHTML = movimientos.map(m => `
     <tr style="border-bottom:1px solid var(--border-soft);">
       <td class="p-4 pl-7 text-sm font-mono" style="color:var(--text-2);">${new Date(m.fecha).toLocaleString('es-VE')}</td>
       <td class="p-4">${m.tipo === 'Entrada'
-        ? '<span class="px-2.5 py-1 rounded-full text-xs font-bold" style="background:rgba(62,142,119,.1); color:var(--accent-ink); border:1px solid rgba(62,142,119,.25);">Entrada</span>'
-        : '<span class="px-2.5 py-1 rounded-full text-xs font-bold" style="background:rgba(171,80,73,.1); color:var(--danger-ink); border:1px solid rgba(171,80,73,.25);">Salida</span>'}</td>
+        ? '<span class="px-2.5 py-1 rounded-full text-xs font-bold" style="background:rgba(16,232,166,.1); color:var(--emerald-ink); border:1px solid rgba(16,232,166,.25);">Entrada</span>'
+        : '<span class="px-2.5 py-1 rounded-full text-xs font-bold" style="background:rgba(251,113,133,.1); color:var(--red-ink); border:1px solid rgba(251,113,133,.25);">Salida</span>'}</td>
       <td class="p-4 text-sm font-bold" style="color:var(--text-1);">${escapeHtml(m.producto)}</td>
       <td class="p-4 text-sm font-mono" style="color:var(--text-2);">${escapeHtml(m.lote || '')}</td>
-      <td class="p-4 text-sm font-bold" style="color:${m.tipo === 'Entrada' ? 'var(--accent)' : 'var(--danger)'};">${m.tipo === 'Entrada' ? '+' : '-'}${m.cantidad}</td>
+      <td class="p-4 text-sm font-bold" style="color:${m.tipo === 'Entrada' ? 'var(--emerald)' : 'var(--red)'};">${m.tipo === 'Entrada' ? '+' : '-'}${m.cantidad}</td>
       <td class="p-4 text-sm" style="color:var(--text-2);">${escapeHtml(m.motivo || '')}</td>
     </tr>`).join('');
 }
@@ -386,7 +386,7 @@ function renderUsuarios() {
       <td class="p-4 pr-7">
         ${u.id === miPerfil.id
           ? `<span class="text-xs" style="color:var(--text-3);" title="No puedes eliminar tu propia cuenta">—</span>`
-          : `<button onclick="eliminarUsuario('${u.id}', '${escapeHtml(u.nombre)} ${escapeHtml(u.apellido)}')" class="p-2 rounded-lg transition" style="color:var(--danger-ink);" title="Eliminar del sistema">${icon('trash', 'w-4 h-4')}</button>`}
+          : `<button onclick="eliminarUsuario('${u.id}', '${escapeHtml(u.nombre)} ${escapeHtml(u.apellido)}')" class="p-2 rounded-lg transition text-lg" style="color:var(--red-ink);" title="Eliminar del sistema">🗑️</button>`}
       </td>
     </tr>`).join('');
 }

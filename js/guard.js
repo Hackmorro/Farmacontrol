@@ -1,8 +1,6 @@
 // =============================================================================
 // FarmaControl — guard.js
 // Verifica que haya sesión activa y que el rol tenga permiso para esta página.
-// Uso: await requireRol(['administrador'])  o  await requireRol(['administrador','cajero'])
-// Devuelve { session, perfil } si todo está en orden.
 // =============================================================================
 
 async function requireRol(rolesPermitidos) {
