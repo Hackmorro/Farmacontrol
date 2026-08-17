@@ -384,9 +384,9 @@ function renderUsuarios() {
         </select>
       </td>
       <td class="p-4 pr-7">
-        ${u.id === miPerfil.id
-          ? `<span class="text-xs" style="color:var(--text-3);" title="No puedes eliminar tu propia cuenta">—</span>`
-          : `<button onclick="eliminarUsuario('${u.id}', '${escapeHtml(u.nombre)} ${escapeHtml(u.apellido)}')" class="p-2 rounded-lg transition text-lg" style="color:var(--red-ink);" title="Eliminar del sistema">🗑️</button>`}
+        ${(u.id === miPerfil.id || !miPerfil.es_dueno)
+          ? `<span class="text-xs" style="color:var(--text-3);" title="${u.id === miPerfil.id ? 'No puedes eliminar tu propia cuenta' : 'Solo el dueño del sistema puede eliminar usuarios'}">—</span>`
+          : `<button onclick="eliminarUsuario('${u.id}', '${escapeHtml(u.nombre)} ${escapeHtml(u.apellido)}')" class="p-2 rounded-lg transition text-lg" style="color:var(--red-ink);" title="Eliminar del sistema por completo">🗑️</button>`}
       </td>
     </tr>`).join('');
 }
@@ -405,9 +405,19 @@ async function cambiarRol(userId, nuevoRol) {
 
 async function eliminarUsuario(userId, nombreCompleto) {
   if (userId === miPerfil.id) return; // protección extra: nunca te eliminas a ti mismo
-  if (!confirm(`¿Eliminar a "${nombreCompleto}" del sistema?\n\nSe borrará su ficha (nombre, cédula, rol, teléfono) de la base de datos. Perderá acceso de inmediato y no podrá volver a entrar con esa cuenta.\n\nEsta acción no se puede deshacer.`)) return;
-  const { error } = await supabaseClient.from('perfiles').delete().eq('id', userId);
-  if (error) { alert('No se pudo eliminar: ' + error.message); return; }
+  if (!miPerfil.es_dueno) { alert('Solo el dueño del sistema puede eliminar usuarios.'); return; }
+  if (!confirm(`¿Eliminar a "${nombreCompleto}" del sistema?\n\nSe borrará su ficha Y su cuenta de acceso por completo. Si vuelve a registrarse con el mismo correo, será tratado como un usuario totalmente nuevo (le llegará el correo de confirmación otra vez).\n\nEsta acción no se puede deshacer.`)) return;
+
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  const { data, error } = await supabaseClient.functions.invoke('eliminar-usuario', {
+    body: { userId },
+    headers: { Authorization: `Bearer ${session.access_token}` }
+  });
+
+  if (error || (data && data.error)) {
+    alert('No se pudo eliminar: ' + (error?.message || data.error));
+    return;
+  }
   await cargarUsuarios();
   renderUsuarios();
   renderStats();
