@@ -54,6 +54,10 @@
     </aside>
 
     <main class="flex-1 p-4 md:p-8 md:overflow-y-auto">
+      <div class="relative mb-4">
+        <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm" style="color:var(--text-3);">🔍</span>
+        <input type="text" id="pos-buscador" placeholder="Buscar por nombre o código de barra..." oninput="filtrarBusquedaPOS()" class="input-dark w-full pl-10 pr-4 py-3 rounded-xl text-sm">
+      </div>
       <div class="flex md:hidden gap-2 overflow-x-auto pb-4 mb-4">
         <button onclick="filtrar('Todos')" class="cat-btn active px-4 py-2 rounded-full whitespace-nowrap text-sm font-medium" id="mcat-Todos">Todos</button>
         <button onclick="filtrar('Medicamentos')" class="cat-btn px-4 py-2 rounded-full whitespace-nowrap text-sm font-medium" id="mcat-Medicamentos">Medicamentos</button>
@@ -62,6 +66,7 @@
         <button onclick="filtrar('Bebidas')" class="cat-btn px-4 py-2 rounded-full whitespace-nowrap text-sm font-medium" id="mcat-Bebidas">Bebidas</button>
       </div>
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" id="productos-container"></div>
+      <p id="pos-sin-resultados" class="hidden text-center py-10 text-sm" style="color:var(--text-3);">Sin resultados.</p>
     </main>
 
     <aside class="w-full md:w-96 border-t md:border-t-0 md:border-l flex flex-col md:h-full" style="background:var(--bg-surface); border-color:var(--border-soft);">

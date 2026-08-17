@@ -79,6 +79,7 @@
       <button onclick="showTab('alertas')" id="tab-alertas" class="tab-btn px-5 py-2.5 rounded-xl text-sm font-semibold">⚠️ Alertas (<span id="badge-alertas">0</span>)</button>
       <button onclick="showTab('movimientos')" id="tab-movimientos" class="tab-btn px-5 py-2.5 rounded-xl text-sm font-semibold">📋 Movimientos</button>
       <button onclick="showTab('usuarios')" id="tab-usuarios" class="tab-btn px-5 py-2.5 rounded-xl text-sm font-semibold">👥 Usuarios y Permisos (<span id="badge-pendientes">0</span>)</button>
+      <button onclick="showTab('reportes')" id="tab-reportes" class="tab-btn px-5 py-2.5 rounded-xl text-sm font-semibold">📈 Reportes</button>
     </div>
 
     <!-- Tab: Inventario -->
@@ -124,7 +125,8 @@
           <div><label class="block text-xs font-bold uppercase mb-2" style="color:var(--text-3);">N° Lote</label>
             <input type="text" id="mov-lote" placeholder="A1024" class="input-dark w-full px-4 py-2.5 rounded-xl text-sm font-mono"></div>
           <div><label class="block text-xs font-bold uppercase mb-2" style="color:var(--text-3);">Vence (lote)</label>
-            <input type="month" id="mov-vence" class="input-dark w-full px-4 py-2.5 rounded-xl text-sm"></div>
+            <input type="month" id="mov-vence" class="input-dark w-full px-4 py-2.5 rounded-xl text-sm" oninput="validarFechaVencimiento('mov-vence','mov-vence-error')"></div>
+          <p id="mov-vence-error" class="hidden text-xs -mt-3 col-span-full" style="color:var(--red-ink);"></p>
           <div><label class="block text-xs font-bold uppercase mb-2" style="color:var(--text-3);">Motivo</label>
             <input type="text" id="mov-motivo" placeholder="Compra proveedor, daño..." class="input-dark w-full px-4 py-2.5 rounded-xl text-sm"></div>
         </div>
@@ -165,6 +167,51 @@
         </div>
       </div>
     </div>
+
+    <!-- Tab: Reportes -->
+    <div id="panel-reportes" class="hidden fade-in space-y-8">
+      <section>
+        <div class="flex justify-between items-center mb-5 flex-wrap gap-3">
+          <h2 class="text-lg font-bold" style="color:var(--text-1);">📈 Reporte del día — <span id="reporte-fecha-hoy"></span></h2>
+          <button onclick="cargarReportes()" id="btn-refrescar-reportes" class="flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-lg transition glass whitespace-nowrap" style="color:var(--emerald-ink);">🔄 Actualizar</button>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-6">
+          <div class="card p-6"><p class="text-[11px] font-bold uppercase tracking-wider" style="color:var(--text-3);">Vendido hoy</p>
+            <p class="font-display text-3xl font-bold mt-1.5" id="rep-total-hoy" style="color:var(--emerald-ink);">$0.00</p></div>
+          <div class="card p-6"><p class="text-[11px] font-bold uppercase tracking-wider" style="color:var(--text-3);">Ventas hoy</p>
+            <p class="font-display text-3xl font-bold mt-1.5" id="rep-cant-ventas" style="color:var(--text-1);">0</p></div>
+          <div class="card p-6"><p class="text-[11px] font-bold uppercase tracking-wider" style="color:var(--text-3);">Ticket promedio</p>
+            <p class="font-display text-3xl font-bold mt-1.5" id="rep-ticket-prom" style="color:var(--text-1);">$0.00</p></div>
+        </div>
+      </section>
+
+      <section class="card overflow-hidden">
+        <div class="p-7 border-b" style="border-color:var(--border-soft);"><h3 class="font-bold text-lg" style="color:var(--text-1);">🧾 Ventas de hoy</h3></div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead><tr class="uppercase text-xs font-bold border-b" style="color:var(--text-3); border-color:var(--border-soft); background:var(--tint-1);">
+              <th class="p-4 pl-7">Hora</th><th class="p-4">Folio</th><th class="p-4">Cliente</th><th class="p-4">Cajero</th><th class="p-4">Método de pago</th><th class="p-4 pr-7">Total</th>
+            </tr></thead>
+            <tbody id="tabla-ventas-hoy"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="card overflow-hidden">
+        <div class="p-7 border-b flex justify-between items-center flex-wrap gap-3" style="border-color:var(--border-soft);">
+          <h3 class="font-bold text-lg" style="color:var(--text-1);">📋 Movimientos de mercancía de hoy</h3>
+          <p class="text-xs" style="color:var(--text-3);">Qué entró, qué salió, y por qué (venta, carga, descargo o anulación)</p>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead><tr class="uppercase text-xs font-bold border-b" style="color:var(--text-3); border-color:var(--border-soft); background:var(--tint-1);">
+              <th class="p-4 pl-7">Hora</th><th class="p-4">Categoría</th><th class="p-4">Producto</th><th class="p-4">Lote</th><th class="p-4">Cantidad</th><th class="p-4 pr-7">Detalle</th>
+            </tr></thead>
+            <tbody id="tabla-movimientos-hoy"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
   </main>
 
   <!-- Modal Nuevo/Editar Producto -->
@@ -204,9 +251,10 @@
           <h4 class="text-sm font-bold mb-3" style="color:var(--text-1);">Lote Inicial</h4>
           <div class="grid grid-cols-3 gap-3">
             <div><label class="block text-[10px] font-bold uppercase mb-1.5" style="color:var(--text-3);">N° Lote</label><input type="text" id="prod-lote-numero" placeholder="A1024" class="input-dark w-full px-3 py-2.5 rounded-xl text-sm"></div>
-            <div><label class="block text-[10px] font-bold uppercase mb-1.5" style="color:var(--text-3);">Vence</label><input type="month" id="prod-lote-vence" class="input-dark w-full px-3 py-2.5 rounded-xl text-sm"></div>
+            <div><label class="block text-[10px] font-bold uppercase mb-1.5" style="color:var(--text-3);">Vence</label><input type="month" id="prod-lote-vence" class="input-dark w-full px-3 py-2.5 rounded-xl text-sm" oninput="validarFechaVencimiento('prod-lote-vence','prod-lote-vence-error')"></div>
             <div><label class="block text-[10px] font-bold uppercase mb-1.5" style="color:var(--text-3);">Cantidad</label><input type="number" min="0" id="prod-lote-cantidad" placeholder="0" class="input-dark w-full px-3 py-2.5 rounded-xl text-sm"></div>
           </div>
+          <p id="prod-lote-vence-error" class="hidden text-xs mt-2" style="color:var(--red-ink);"></p>
         </div>
       </div>
       <div class="flex gap-3 mt-8">
@@ -216,23 +264,52 @@
     </div>
   </div>
 
-  <!-- Modal Stock -->
+  <!-- Modal Carga de Stock (entradas: compra, devolución, alta) -->
   <div id="modal-stock" class="fixed inset-0 bg-black/60 backdrop-blur-sm items-center justify-center z-50 p-4 hidden">
     <div class="glass rounded-2xl max-w-md w-full p-8 shadow-2xl fade-in" style="background:var(--bg-surface);">
-      <h3 class="text-xl font-bold mb-1" style="color:var(--text-1);">📦 Ajustar Stock</h3>
+      <h3 class="text-xl font-bold mb-1" style="color:var(--text-1);">📥 Carga de Stock</h3>
       <p class="text-xs mb-5" id="stock-info" style="color:var(--text-3);"></p>
       <div id="stock-lotes-actuales" class="space-y-2 mb-5"></div>
-      <div class="grid grid-cols-2 gap-3 mb-4">
-        <div><label class="block text-[10px] font-bold uppercase mb-1.5" style="color:var(--text-3);">N° Lote (opcional)</label><input type="text" id="stock-lote" class="input-dark w-full px-3 py-2.5 rounded-xl text-sm"></div>
-        <div><label class="block text-[10px] font-bold uppercase mb-1.5" style="color:var(--text-3);">Vence</label><input type="month" id="stock-vence" class="input-dark w-full px-3 py-2.5 rounded-xl text-sm"></div>
+      <div class="grid grid-cols-2 gap-3 mb-1">
+        <div><label class="block text-[10px] font-bold uppercase mb-1.5" style="color:var(--text-3);">N° Lote</label><input type="text" id="stock-lote" placeholder="A1024" class="input-dark w-full px-3 py-2.5 rounded-xl text-sm"></div>
+        <div><label class="block text-[10px] font-bold uppercase mb-1.5" style="color:var(--text-3);">Vence</label><input type="month" id="stock-vence" class="input-dark w-full px-3 py-2.5 rounded-xl text-sm" oninput="validarFechaVencimiento('stock-vence','stock-vence-error')"></div>
       </div>
-      <label class="block text-xs font-bold uppercase mb-2" style="color:var(--text-2);">Cantidad (+ entrada / - salida)</label>
-      <input type="number" id="stock-cantidad" value="0" class="input-dark w-full px-4 py-3 rounded-xl text-sm mb-4">
+      <p id="stock-vence-error" class="hidden text-xs mb-4" style="color:var(--red-ink);"></p>
+      <label class="block text-xs font-bold uppercase mb-2" style="color:var(--text-2);">Cantidad que entra</label>
+      <input type="number" min="1" id="stock-cantidad" placeholder="0" class="input-dark w-full px-4 py-3 rounded-xl text-sm mb-4">
       <label class="block text-xs font-bold uppercase mb-2" style="color:var(--text-2);">Motivo</label>
-      <input type="text" id="stock-motivo" placeholder="Ajuste manual" class="input-dark w-full px-4 py-3 rounded-xl text-sm mb-6">
+      <input type="text" id="stock-motivo" placeholder="Compra a proveedor, devolución..." class="input-dark w-full px-4 py-3 rounded-xl text-sm mb-6">
       <div class="flex gap-3">
         <button onclick="cerrarModal('modal-stock')" class="flex-1 py-3 font-semibold rounded-xl transition glass" style="color:var(--text-2);">Cancelar</button>
-        <button onclick="confirmarStock()" class="btn-primary flex-1 py-3 text-white font-bold rounded-xl transition">Confirmar</button>
+        <button onclick="confirmarStock()" id="btn-confirmar-carga" class="btn-primary flex-1 py-3 text-white font-bold rounded-xl transition">Confirmar Carga</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Descargo (salidas por vencimiento, daño, pérdida, robo o anulación -- NO venta) -->
+  <div id="modal-descargo" class="fixed inset-0 bg-black/60 backdrop-blur-sm items-center justify-center z-50 p-4 hidden">
+    <div class="glass rounded-2xl max-w-md w-full p-8 shadow-2xl fade-in" style="background:var(--bg-surface);">
+      <h3 class="text-xl font-bold mb-1" style="color:var(--text-1);">📤 Descargo de Producto</h3>
+      <p class="text-xs mb-5" style="color:var(--text-3);">Para sacar producto del inventario que NO se vendió: vencido, dañado, perdido, robado o anulado.</p>
+      <p class="text-xs mb-5 font-semibold" id="descargo-info" style="color:var(--text-2);"></p>
+      <label class="block text-xs font-bold uppercase mb-2" style="color:var(--text-2);">Lote afectado</label>
+      <select id="descargo-lote" class="input-dark w-full px-4 py-3 rounded-xl text-sm mb-4"></select>
+      <label class="block text-xs font-bold uppercase mb-2" style="color:var(--text-2);">Cantidad a descargar</label>
+      <input type="number" min="1" id="descargo-cantidad" placeholder="0" class="input-dark w-full px-4 py-3 rounded-xl text-sm mb-4">
+      <label class="block text-xs font-bold uppercase mb-2" style="color:var(--text-2);">Motivo del descargo</label>
+      <select id="descargo-motivo" class="input-dark w-full px-4 py-3 rounded-xl text-sm mb-4">
+        <option value="Vencido">Vencido</option>
+        <option value="Dañado">Dañado</option>
+        <option value="Perdido">Perdido</option>
+        <option value="Robado">Robado</option>
+        <option value="Anulado">Anulado</option>
+        <option value="Otro">Otro</option>
+      </select>
+      <label class="block text-xs font-bold uppercase mb-2" style="color:var(--text-2);">Nota (opcional)</label>
+      <input type="text" id="descargo-nota" placeholder="Detalle adicional..." class="input-dark w-full px-4 py-3 rounded-xl text-sm mb-6">
+      <div class="flex gap-3">
+        <button onclick="cerrarModal('modal-descargo')" class="flex-1 py-3 font-semibold rounded-xl transition glass" style="color:var(--text-2);">Cancelar</button>
+        <button onclick="confirmarDescargo()" class="flex-1 py-3 text-white font-bold rounded-xl transition" style="background:linear-gradient(135deg, #F43F5E, #E11D48);">Confirmar Descargo</button>
       </div>
     </div>
   </div>
