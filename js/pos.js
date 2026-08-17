@@ -25,10 +25,12 @@ async function cargarProductos() {
   productos = (prods || []).map(p => ({ ...p, lotes: (lotes || []).filter(l => l.producto_id === p.id) }));
 }
 
+let categoriaActual = 'Todos';
+
 function renderProductos() {
   const cont = document.getElementById('productos-container');
   cont.innerHTML = productos.map(p => `
-    <div class="card-producto p-5 rounded-2xl flex flex-col justify-between producto" data-categoria="${p.categoria}" data-id="${p.id}">
+    <div class="card-producto p-5 rounded-2xl flex flex-col justify-between producto" data-categoria="${p.categoria}" data-id="${p.id}" data-nombre="${p.nombre.toLowerCase()}" data-barra="${(p.codigo_barra || '').toLowerCase()}">
       <div>
         <div class="flex justify-between items-start mb-3">
           <span class="text-lg font-bold px-3 py-2 rounded-xl" style="background:rgba(16,232,166,.1); color:var(--emerald-ink);">${p.categoria.slice(0, 2)}</span>
@@ -55,12 +57,31 @@ function renderProductos() {
       } catch (e) {}
     }
   });
+  aplicarFiltros();
 }
 
 function filtrar(cat) {
+  categoriaActual = cat;
   document.querySelectorAll('[id^="cat-"]').forEach(b => b.classList.toggle('active', b.id === 'cat-' + cat));
   document.querySelectorAll('[id^="mcat-"]').forEach(b => b.classList.toggle('active', b.id === 'mcat-' + cat));
-  document.querySelectorAll('.producto').forEach(el => { el.style.display = (cat === 'Todos' || el.dataset.categoria === cat) ? 'flex' : 'none'; });
+  aplicarFiltros();
+}
+
+function filtrarBusquedaPOS() {
+  aplicarFiltros();
+}
+
+function aplicarFiltros() {
+  const q = (document.getElementById('pos-buscador').value || '').toLowerCase().trim();
+  let visibles = 0;
+  document.querySelectorAll('.producto').forEach(el => {
+    const coincideCategoria = categoriaActual === 'Todos' || el.dataset.categoria === categoriaActual;
+    const coincideBusqueda = !q || (el.dataset.nombre || '').includes(q) || (el.dataset.barra || '').includes(q);
+    const visible = coincideCategoria && coincideBusqueda;
+    el.style.display = visible ? 'flex' : 'none';
+    if (visible) visibles++;
+  });
+  document.getElementById('pos-sin-resultados').classList.toggle('hidden', visibles > 0);
 }
 
 function actualizarStockUI(id) {

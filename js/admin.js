@@ -60,11 +60,12 @@ function renderStats() {
 // TABS
 // ---------------------------------------------------------------------------
 function showTab(tab) {
-  ['inventario', 'alertas', 'movimientos', 'usuarios'].forEach(t => {
+  ['inventario', 'alertas', 'movimientos', 'usuarios', 'reportes'].forEach(t => {
     document.getElementById('panel-' + t).classList.toggle('hidden', t !== tab);
     document.getElementById('tab-' + t).classList.toggle('active', t === tab);
   });
   if (tab === 'usuarios') refrescarUsuarios();
+  if (tab === 'reportes') cargarReportes();
 }
 
 async function refrescarUsuarios() {
@@ -119,11 +120,16 @@ function renderProductos() {
         ${p.fabricante ? `<div class="flex items-center gap-2"><span class="text-[10px] w-16" style="color:var(--text-3);">Fabrica:</span><span class="text-[11px]" style="color:var(--text-2);">${escapeHtml(p.fabricante)}</span></div>` : ''}
         ${p.proveedor ? `<div class="flex items-center gap-2"><span class="text-[10px] w-16" style="color:var(--text-3);">Surte:</span><span class="text-[11px]" style="color:var(--text-2);">${escapeHtml(p.proveedor)}</span></div>` : ''}
       </div>
-      <div class="flex gap-2">
-        <button onclick="abrirStockModal(${p.id})" class="flex-1 py-2.5 text-xs font-bold rounded-xl transition" style="background:rgba(167,139,250,.1); color:var(--violet-ink);">📦 Stock</button>
-        <button onclick="abrirEditar(${p.id})" class="flex-1 py-2.5 text-xs font-bold rounded-xl transition" style="background:rgba(251,191,36,.1); color:var(--amber-ink);">✏️ Editar</button>
-        ${p.codigo_barra ? `<button onclick="abrirBarcodeModal(${p.id})" class="py-2.5 px-3 text-xs font-bold rounded-xl transition" style="background:var(--tint-3); color:var(--text-2);">📊</button>` : ''}
-        <button onclick="eliminarProducto(${p.id}, '${escapeHtml(p.nombre)}')" class="py-2.5 px-3 text-xs font-bold rounded-xl transition" style="background:rgba(251,113,133,.1); color:var(--red-ink);">🗑️</button>
+      <div class="space-y-2">
+        <div class="flex gap-2">
+          <button onclick="abrirStockModal(${p.id})" class="flex-1 py-2.5 text-xs font-bold rounded-xl transition" style="background:rgba(16,232,166,.1); color:var(--emerald-ink);">📥 Carga</button>
+          <button onclick="abrirDescargoModal(${p.id})" class="flex-1 py-2.5 text-xs font-bold rounded-xl transition" style="background:rgba(251,113,133,.1); color:var(--red-ink);">📤 Descargo</button>
+        </div>
+        <div class="flex gap-2">
+          <button onclick="abrirEditar(${p.id})" class="flex-1 py-2.5 text-xs font-bold rounded-xl transition" style="background:rgba(251,191,36,.1); color:var(--amber-ink);">✏️ Editar</button>
+          ${p.codigo_barra ? `<button onclick="abrirBarcodeModal(${p.id})" class="py-2.5 px-3 text-xs font-bold rounded-xl transition" style="background:var(--tint-3); color:var(--text-2);">📊</button>` : ''}
+          <button onclick="eliminarProducto(${p.id}, '${escapeHtml(p.nombre)}')" class="py-2.5 px-3 text-xs font-bold rounded-xl transition" style="background:rgba(251,113,133,.1); color:var(--red-ink);">🗑️</button>
+        </div>
       </div>`;
     grid.appendChild(div);
   });
@@ -161,7 +167,7 @@ function renderAlertas() {
           <p class="text-xs mt-0.5" style="color:var(--text-3);">Proveedor: ${escapeHtml(p.proveedor || 'No registrado')} | Fabricante: ${escapeHtml(p.fabricante || 'No registrado')}</p>
         </div>
       </div>
-      <button onclick="abrirStockModal(${p.id})" class="px-5 py-2.5 text-white text-xs font-bold rounded-xl transition" style="background:linear-gradient(135deg, #F43F5E, #E11D48);">Ajustar Stock</button>
+      <button onclick="abrirStockModal(${p.id})" class="px-5 py-2.5 text-white text-xs font-bold rounded-xl transition" style="background:linear-gradient(135deg, var(--emerald), var(--emerald-dim));">📥 Cargar Stock</button>
     </div>`).join('');
 }
 
@@ -216,6 +222,8 @@ async function guardarProducto() {
     await supabaseClient.from('productos').update(data).eq('id', id);
     await supabaseClient.from('lotes').update({ producto_nombre: nombre }).eq('producto_id', id);
   } else {
+    const loteVencePrevio = document.getElementById('prod-lote-vence').value;
+    if (loteVencePrevio && !validarFechaVencimiento('prod-lote-vence', 'prod-lote-vence-error')) { return; }
     const { data: nuevo, error } = await supabaseClient.from('productos').insert(data).select().single();
     if (error) { alert('Error al guardar: ' + error.message); return; }
     const loteNum = document.getElementById('prod-lote-numero').value.trim();
@@ -237,7 +245,40 @@ async function eliminarProducto(id, nombre) {
 }
 
 // ---------------------------------------------------------------------------
-// STOCK
+// VALIDACIÓN DE FECHAS DE VENCIMIENTO
+// No tiene sentido registrar un lote nuevo con una fecha de vencimiento ya
+// pasada (por ejemplo, escribir "1999" por error). Se acepta desde el mes
+// actual hasta 15 años a futuro como rango razonable.
+// ---------------------------------------------------------------------------
+function fechaVencimientoValida(valorMes) {
+  if (!valorMes) return { ok: true }; // vacío se valida aparte según el formulario
+  const hoy = new Date();
+  const inicioMesActual = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+  const [anio, mes] = valorMes.split('-').map(Number);
+  const fecha = new Date(anio, mes - 1, 1);
+  if (fecha < inicioMesActual) return { ok: false, error: 'La fecha de vencimiento no puede ser anterior al mes actual.' };
+  const limiteFuturo = new Date(hoy.getFullYear() + 15, hoy.getMonth(), 1);
+  if (fecha > limiteFuturo) return { ok: false, error: 'Esa fecha está demasiado lejos en el futuro, revisa el año.' };
+  return { ok: true };
+}
+
+function validarFechaVencimiento(inputId, errorId) {
+  const input = document.getElementById(inputId);
+  const errorEl = document.getElementById(errorId);
+  const resultado = fechaVencimientoValida(input.value);
+  if (!resultado.ok) {
+    errorEl.textContent = resultado.error;
+    errorEl.classList.remove('hidden');
+    input.style.borderColor = 'var(--red)';
+  } else {
+    errorEl.classList.add('hidden');
+    input.style.borderColor = '';
+  }
+  return resultado.ok;
+}
+
+// ---------------------------------------------------------------------------
+// CARGA DE STOCK (solo entradas: compra, devolución, alta de mercancía)
 // ---------------------------------------------------------------------------
 function abrirStockModal(id) {
   stockIdActual = id;
@@ -251,46 +292,80 @@ function abrirStockModal(id) {
     : '';
   document.getElementById('stock-lote').value = '';
   document.getElementById('stock-vence').value = '';
-  document.getElementById('stock-cantidad').value = '0';
+  document.getElementById('stock-cantidad').value = '';
   document.getElementById('stock-motivo').value = '';
+  document.getElementById('stock-vence-error').classList.add('hidden');
   abrirModal('modal-stock');
 }
 
 async function confirmarStock() {
   const cantidad = parseInt(document.getElementById('stock-cantidad').value) || 0;
-  if (cantidad === 0) { cerrarModal('modal-stock'); return; }
   const p = productos.find(x => x.id === stockIdActual);
   if (!p) return;
   const loteNum = document.getElementById('stock-lote').value.trim();
   const loteVenceInput = document.getElementById('stock-vence').value;
-  const motivo = document.getElementById('stock-motivo').value || 'Ajuste manual';
+  const motivo = document.getElementById('stock-motivo').value || 'Carga de stock';
 
-  if (loteNum && loteVenceInput) {
-    const vence = loteVenceInput + '-01';
-    const existente = p.lotes.find(l => l.numero === loteNum);
-    if (existente) {
-      const nuevaCant = Math.max(0, existente.cantidad + cantidad);
-      if (nuevaCant === 0) await supabaseClient.from('lotes').delete().eq('id', existente.id);
-      else await supabaseClient.from('lotes').update({ cantidad: nuevaCant }).eq('id', existente.id);
-    } else if (cantidad > 0) {
-      await supabaseClient.from('lotes').insert({ producto_id: p.id, producto_nombre: p.nombre, numero: loteNum, vence, cantidad });
-    }
-    await registrarMovimientoDirecto(cantidad > 0 ? 'Entrada' : 'Salida', p.id, p.nombre, Math.abs(cantidad), loteNum, motivo);
+  if (cantidad <= 0) { alert('Indica la cantidad que está entrando (mayor a 0).'); return; }
+  if (!loteNum || !loteVenceInput) { alert('El número de lote y la fecha de vencimiento son obligatorios para cargar stock.'); return; }
+  if (!validarFechaVencimiento('stock-vence', 'stock-vence-error')) { return; }
+
+  const vence = loteVenceInput + '-01';
+  const existente = p.lotes.find(l => l.numero === loteNum);
+  if (existente) {
+    await supabaseClient.from('lotes').update({ cantidad: existente.cantidad + cantidad, vence }).eq('id', existente.id);
   } else {
-    // Sin lote especifico: afecta el lote mas proximo a vencer (o crea uno generico)
-    const lotesOrdenados = [...p.lotes].sort((a, b) => a.vence.localeCompare(b.vence));
-    if (lotesOrdenados.length === 0 && cantidad > 0) {
-      await supabaseClient.from('lotes').insert({ producto_id: p.id, producto_nombre: p.nombre, numero: 'GEN', vence: '2099-12-01', cantidad });
-      await registrarMovimientoDirecto('Entrada', p.id, p.nombre, cantidad, 'GEN', motivo);
-    } else if (lotesOrdenados.length > 0) {
-      const primero = lotesOrdenados[0];
-      const nuevaCant = Math.max(0, primero.cantidad + cantidad);
-      if (nuevaCant === 0) await supabaseClient.from('lotes').delete().eq('id', primero.id);
-      else await supabaseClient.from('lotes').update({ cantidad: nuevaCant }).eq('id', primero.id);
-      await registrarMovimientoDirecto(cantidad > 0 ? 'Entrada' : 'Salida', p.id, p.nombre, Math.abs(cantidad), primero.numero, motivo);
-    }
+    await supabaseClient.from('lotes').insert({ producto_id: p.id, producto_nombre: p.nombre, numero: loteNum, vence, cantidad });
   }
+  await registrarMovimientoDirecto('Entrada', p.id, p.nombre, cantidad, loteNum, motivo);
+
   cerrarModal('modal-stock');
+  await cargarTodo();
+}
+
+// ---------------------------------------------------------------------------
+// DESCARGO (salidas que NO son venta: vencido, dañado, perdido, robado, anulado)
+// ---------------------------------------------------------------------------
+let descargoIdActual = null;
+
+function abrirDescargoModal(id) {
+  descargoIdActual = id;
+  const p = productos.find(x => x.id === id);
+  if (!p) return;
+  document.getElementById('descargo-info').textContent = `${p.nombre} — Stock total: ${stockTotal(p)}`;
+  const sel = document.getElementById('descargo-lote');
+  if (p.lotes.length === 0) {
+    sel.innerHTML = '<option value="">Sin lotes con stock</option>';
+  } else {
+    sel.innerHTML = p.lotes.map(l => `<option value="${l.id}">${l.numero} — vence ${l.vence} — ${l.cantidad}u disponibles</option>`).join('');
+  }
+  document.getElementById('descargo-cantidad').value = '';
+  document.getElementById('descargo-motivo').value = 'Vencido';
+  document.getElementById('descargo-nota').value = '';
+  abrirModal('modal-descargo');
+}
+
+async function confirmarDescargo() {
+  const p = productos.find(x => x.id === descargoIdActual);
+  if (!p) return;
+  const loteId = parseInt(document.getElementById('descargo-lote').value);
+  const cantidad = parseInt(document.getElementById('descargo-cantidad').value) || 0;
+  const motivo = document.getElementById('descargo-motivo').value;
+  const nota = document.getElementById('descargo-nota').value.trim();
+  const lote = p.lotes.find(l => l.id === loteId);
+
+  if (!lote) { alert('Selecciona un lote válido.'); return; }
+  if (cantidad <= 0) { alert('Indica la cantidad a descargar (mayor a 0).'); return; }
+  if (cantidad > lote.cantidad) { alert(`Ese lote solo tiene ${lote.cantidad} unidades disponibles.`); return; }
+
+  const nuevaCant = lote.cantidad - cantidad;
+  if (nuevaCant === 0) await supabaseClient.from('lotes').delete().eq('id', lote.id);
+  else await supabaseClient.from('lotes').update({ cantidad: nuevaCant }).eq('id', lote.id);
+
+  const motivoCompleto = `Descargo: ${motivo}` + (nota ? ` — ${nota}` : '');
+  await registrarMovimientoDirecto('Salida', p.id, p.nombre, cantidad, lote.numero, motivoCompleto);
+
+  cerrarModal('modal-descargo');
   await cargarTodo();
 }
 
@@ -315,6 +390,7 @@ async function registrarMovimiento() {
   const loteVenceInput = document.getElementById('mov-vence').value;
   const motivo = document.getElementById('mov-motivo').value;
   if (!pid || cantidad <= 0) { alert('Selecciona producto y cantidad válida'); return; }
+  if (loteVenceInput && !validarFechaVencimiento('mov-vence', 'mov-vence-error')) { return; }
   const p = productos.find(x => x.id === pid);
   if (!p) return;
 
@@ -439,3 +515,65 @@ function abrirBarcodeModal(id) {
   abrirModal('modal-barcode');
 }
 function escapeHtml(str) { return String(str ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+
+// ---------------------------------------------------------------------------
+// REPORTES (ventas del día + movimientos categorizados del día)
+// ---------------------------------------------------------------------------
+function categorizarMovimiento(m) {
+  if (m.tipo === 'Entrada') return { etiqueta: 'Carga', color: 'background:rgba(16,232,166,.1); color:var(--emerald-ink);' };
+  if ((m.motivo || '').startsWith('Venta POS')) return { etiqueta: 'Venta', color: 'background:rgba(34,211,238,.1); color:var(--cyan-ink);' };
+  if ((m.motivo || '').startsWith('Descargo')) return { etiqueta: 'Descargo', color: 'background:rgba(251,113,133,.1); color:var(--red-ink);' };
+  return { etiqueta: 'Salida', color: 'background:rgba(251,191,36,.1); color:var(--amber-ink);' };
+}
+
+async function cargarReportes() {
+  const btn = document.getElementById('btn-refrescar-reportes');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Actualizando...'; }
+
+  const hoy = new Date();
+  const inicioHoy = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate()).toISOString();
+  document.getElementById('reporte-fecha-hoy').textContent = hoy.toLocaleDateString('es-VE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+
+  const [{ data: facturasHoy }, { data: movimientosHoy }] = await Promise.all([
+    supabaseClient.from('facturas').select('*').gte('fecha', inicioHoy).order('fecha', { ascending: false }),
+    supabaseClient.from('movimientos').select('*').gte('fecha', inicioHoy).order('fecha', { ascending: false })
+  ]);
+
+  const facturas = facturasHoy || [];
+  const movimientos = movimientosHoy || [];
+  const totalHoy = facturas.reduce((s, f) => s + Number(f.total), 0);
+
+  document.getElementById('rep-total-hoy').textContent = '$' + totalHoy.toFixed(2);
+  document.getElementById('rep-cant-ventas').textContent = facturas.length;
+  document.getElementById('rep-ticket-prom').textContent = '$' + (facturas.length ? totalHoy / facturas.length : 0).toFixed(2);
+
+  const tbodyVentas = document.getElementById('tabla-ventas-hoy');
+  tbodyVentas.innerHTML = facturas.length === 0
+    ? `<tr><td colspan="6" class="p-10 text-center" style="color:var(--text-3);">Todavía no hay ventas registradas hoy.</td></tr>`
+    : facturas.map(f => `
+      <tr style="border-bottom:1px solid var(--border-soft);">
+        <td class="p-4 pl-7 text-sm font-mono" style="color:var(--text-2);">${new Date(f.fecha).toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit' })}</td>
+        <td class="p-4 text-sm font-mono" style="color:var(--text-1);">${escapeHtml(f.folio)}</td>
+        <td class="p-4 text-sm" style="color:var(--text-2);">${escapeHtml(f.cliente || 'Consumidor Final')}</td>
+        <td class="p-4 text-sm" style="color:var(--text-2);">${escapeHtml(f.cajero || '')}</td>
+        <td class="p-4 text-sm" style="color:var(--text-2);">${escapeHtml(f.metodo_pago || '')}</td>
+        <td class="p-4 pr-7 text-sm font-bold" style="color:var(--emerald-ink);">$${Number(f.total).toFixed(2)}</td>
+      </tr>`).join('');
+
+  const tbodyMov = document.getElementById('tabla-movimientos-hoy');
+  tbodyMov.innerHTML = movimientos.length === 0
+    ? `<tr><td colspan="6" class="p-10 text-center" style="color:var(--text-3);">Todavía no hay movimientos registrados hoy.</td></tr>`
+    : movimientos.map(m => {
+        const cat = categorizarMovimiento(m);
+        return `<tr style="border-bottom:1px solid var(--border-soft);">
+          <td class="p-4 pl-7 text-sm font-mono" style="color:var(--text-2);">${new Date(m.fecha).toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit' })}</td>
+          <td class="p-4"><span class="px-2.5 py-1 rounded-full text-xs font-bold" style="${cat.color}">${cat.etiqueta}</span></td>
+          <td class="p-4 text-sm font-bold" style="color:var(--text-1);">${escapeHtml(m.producto)}</td>
+          <td class="p-4 text-sm font-mono" style="color:var(--text-2);">${escapeHtml(m.lote || '')}</td>
+          <td class="p-4 text-sm font-bold" style="color:${m.tipo === 'Entrada' ? 'var(--emerald)' : 'var(--red)'};">${m.tipo === 'Entrada' ? '+' : '-'}${m.cantidad}</td>
+          <td class="p-4 pr-7 text-sm" style="color:var(--text-2);">${escapeHtml(m.motivo || '')}</td>
+        </tr>`;
+      }).join('');
+
+  if (btn) { btn.disabled = false; btn.innerHTML = '🔄 Actualizar'; }
+}
