@@ -147,10 +147,23 @@ function vaciarCarrito() {
   productos.forEach(p => actualizarStockUI(p.id));
 }
 
+function abrirCarritoMobil() {
+  const panel = document.getElementById('carrito-panel');
+  panel.classList.remove('hidden');
+  panel.classList.add('flex');
+  document.body.style.overflow = 'hidden';
+}
+function cerrarCarritoMobil() {
+  const panel = document.getElementById('carrito-panel');
+  if (window.innerWidth < 768) { panel.classList.add('hidden'); panel.classList.remove('flex'); }
+  document.body.style.overflow = '';
+}
+
 function renderCarrito() {
   const lista = document.getElementById('carrito-lista');
   const vaciarBtn = document.getElementById('vaciar-btn');
   const checkoutBtn = document.getElementById('checkout-btn');
+  const flotante = document.getElementById('carrito-flotante');
   if (carrito.length === 0) {
     lista.innerHTML = '<div class="text-center py-16" style="color:var(--text-3);"><span class="text-4xl block mb-3">🛒</span><p class="text-sm">El carrito está vacío</p></div>';
     vaciarBtn.classList.add('hidden');
@@ -158,13 +171,17 @@ function renderCarrito() {
     document.getElementById('subtotal').textContent = '$0.00';
     document.getElementById('iva').textContent = '$0.00';
     document.getElementById('total').textContent = '$0.00';
+    flotante.classList.add('hidden');
+    cerrarCarritoMobil();
     return;
   }
   vaciarBtn.classList.remove('hidden');
   checkoutBtn.disabled = false;
   let subtotal = 0;
+  let totalUnidades = 0;
   lista.innerHTML = carrito.map(c => {
     subtotal += c.precio * c.cantidad;
+    totalUnidades += c.cantidad;
     return `<div class="flex justify-between items-center p-4 rounded-xl" style="background:var(--tint-2); border:1px solid var(--border-soft);">
       <div class="flex-1 min-w-0 pr-3"><h5 class="font-semibold text-sm truncate" style="color:var(--text-1);">${escapeHtml(c.nombre)}</h5><p class="text-xs font-bold" style="color:var(--emerald-ink);">$${c.precio.toFixed(2)} c/u</p></div>
       <div class="flex items-center gap-2">
@@ -174,9 +191,15 @@ function renderCarrito() {
       </div></div>`;
   }).join('');
   const iva = subtotal * 0.16;
+  const total = subtotal + iva;
   document.getElementById('subtotal').textContent = '$' + subtotal.toFixed(2);
   document.getElementById('iva').textContent = '$' + iva.toFixed(2);
-  document.getElementById('total').textContent = '$' + (subtotal + iva).toFixed(2);
+  document.getElementById('total').textContent = '$' + total.toFixed(2);
+
+  // Barra flotante (solo visible en móvil vía CSS md:hidden)
+  document.getElementById('carrito-flotante-count').textContent = totalUnidades;
+  document.getElementById('carrito-flotante-total').textContent = '$' + total.toFixed(2);
+  flotante.classList.remove('hidden');
 }
 
 function abrirCheckout() {
@@ -208,6 +231,9 @@ async function completarCompra() {
   const textoOriginal = cobrarBtn.innerHTML;
   cobrarBtn.disabled = true;
   cobrarBtn.innerHTML = '<span class="spinner"></span> Procesando...';
+  const overlay = document.getElementById('overlay-bloqueo');
+  overlay.classList.remove('hidden');
+  overlay.classList.add('flex');
 
   try {
     const subtotal = carrito.reduce((a, c) => a + c.precio * c.cantidad, 0);
@@ -249,6 +275,7 @@ async function completarCompra() {
     carrito = [];
     renderCarrito();
     cerrarCheckout();
+    cerrarCarritoMobil();
     await cargarProductos();
     renderProductos();
   } catch (e) {
@@ -256,6 +283,8 @@ async function completarCompra() {
   } finally {
     cobrarBtn.disabled = false;
     cobrarBtn.innerHTML = textoOriginal;
+    overlay.classList.add('hidden');
+    overlay.classList.remove('flex');
   }
 }
 
@@ -315,6 +344,13 @@ function generarFacturaPDF(factura) {
   doc.text('Folio ' + factura.folio + ' · ' + new Date().toLocaleString('es-VE'), 105, y, { align: 'center' });
 
   doc.save('Factura-' + factura.folio + '.pdf');
+
+  // Abre una pestaña nueva con el PDF y dispara el diálogo de impresión
+  // automáticamente (además de la descarga de arriba, que sirve de respaldo).
+  try {
+    doc.autoPrint();
+    window.open(doc.output('bloburl'), '_blank');
+  } catch (e) { /* si el navegador bloquea la pestaña, la descarga ya se hizo */ }
 }
 
 function escapeHtml(str) { return String(str ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
