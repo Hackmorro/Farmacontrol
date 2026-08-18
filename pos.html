@@ -69,12 +69,15 @@
       <p id="pos-sin-resultados" class="hidden text-center py-10 text-sm" style="color:var(--text-3);">Sin resultados.</p>
     </main>
 
-    <aside class="w-full md:w-96 border-t md:border-t-0 md:border-l flex flex-col md:h-full" style="background:var(--bg-surface); border-color:var(--border-soft);">
+    <aside id="carrito-panel" class="hidden md:flex w-full md:w-96 border-t md:border-t-0 md:border-l flex-col fixed md:static inset-0 z-40" style="background:var(--bg-surface); border-color:var(--border-soft);">
       <div class="p-6 border-b flex justify-between items-center" style="border-color:var(--border-soft);">
         <h3 class="font-bold text-lg flex items-center gap-2" style="color:var(--text-1);">🧾 Factura Actual</h3>
-        <button onclick="vaciarCarrito()" id="vaciar-btn" class="text-xs hover:underline font-semibold hidden" style="color:var(--red-ink);">Vaciar todo</button>
+        <div class="flex items-center gap-4">
+          <button onclick="vaciarCarrito()" id="vaciar-btn" class="text-xs hover:underline font-semibold hidden" style="color:var(--red-ink);">Vaciar todo</button>
+          <button onclick="cerrarCarritoMobil()" class="md:hidden text-2xl leading-none" style="color:var(--text-2);">✕</button>
+        </div>
       </div>
-      <div class="p-6 space-y-4 max-h-80 overflow-y-auto md:max-h-none md:flex-1" id="carrito-lista">
+      <div class="p-6 space-y-4 overflow-y-auto flex-1" id="carrito-lista">
         <div class="text-center py-16" style="color:var(--text-3);"><span class="text-4xl block mb-3">🛒</span><p class="text-sm">El carrito está vacío</p></div>
       </div>
       <div class="p-6 border-t space-y-3.5" style="border-color:var(--border-soft); background:var(--tint-1);">
@@ -84,6 +87,25 @@
         <button onclick="abrirCheckout()" id="checkout-btn" disabled class="btn-checkout w-full mt-4 py-4 text-slate-950 font-bold rounded-xl transition">Realizar Compra 🚀</button>
       </div>
     </aside>
+  </div>
+
+  <!-- Barra flotante del carrito — solo en móvil -->
+  <div id="carrito-flotante" class="md:hidden hidden fixed bottom-4 left-4 right-4 z-30">
+    <button onclick="abrirCarritoMobil()" class="btn-checkout w-full py-4 rounded-2xl flex items-center justify-between px-5 shadow-2xl">
+      <span class="flex items-center gap-2.5 text-slate-950 font-bold text-sm">
+        <span class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-black" style="background:rgba(15,23,42,.18);" id="carrito-flotante-count">0</span>
+        Ver carrito
+      </span>
+      <span class="text-slate-950 font-black text-base" id="carrito-flotante-total">$0.00</span>
+    </button>
+  </div>
+
+  <!-- Bloqueo de pantalla mientras se procesa una venta -->
+  <div id="overlay-bloqueo" class="hidden fixed inset-0 z-[60] items-center justify-center" style="background:rgba(2,6,23,.72); backdrop-filter:blur(4px);">
+    <div class="flex flex-col items-center gap-4">
+      <span class="spinner" style="width:38px;height:38px;border-width:4px;"></span>
+      <p class="text-sm font-semibold" style="color:#fff;">Procesando venta, no cierres esta pantalla...</p>
+    </div>
   </div>
 
   <div id="modal-pago" class="fixed inset-0 bg-black/60 backdrop-blur-sm items-center justify-center z-50 p-4 hidden">
