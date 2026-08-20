@@ -88,14 +88,14 @@
                   <option value="V">V-</option>
                   <option value="E">E-</option>
                 </select>
-                <input type="text" id="reg-cedula" required inputmode="numeric" placeholder="12345678" class="input-dark w-full px-4 py-3 rounded-2xl text-sm">
+                <input type="text" id="reg-cedula" required inputmode="numeric" maxlength="8" placeholder="12345678" oninput="this.value=this.value.replace(/\D/g,'').slice(0,8)" class="input-dark w-full px-4 py-3 rounded-2xl text-sm">
               </div>
             </div>
             <div>
               <label class="block text-xs font-bold uppercase tracking-wider mb-2" style="color:var(--text-2);">Teléfono</label>
               <div class="flex gap-2">
                 <span class="input-dark px-3 py-3 rounded-2xl text-sm" style="color:var(--text-2);">+58</span>
-                <input type="tel" id="reg-telefono" inputmode="numeric" placeholder="4121234567" class="input-dark w-full px-4 py-3 rounded-2xl text-sm">
+                <input type="tel" id="reg-telefono" inputmode="numeric" maxlength="10" placeholder="4121234567" oninput="this.value=this.value.replace(/\D/g,'').slice(0,10)" class="input-dark w-full px-4 py-3 rounded-2xl text-sm">
               </div>
             </div>
           </div>
