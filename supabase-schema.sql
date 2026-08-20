@@ -29,13 +29,7 @@ create table if not exists perfiles (
 
 comment on table perfiles is 'Datos de ficha + rol/permisos de cada usuario. rol se asigna manualmente por un administrador.';
 comment on column perfiles.rol is 'sin_permisos = recién registrado, esperando aprobación. cajero = solo Punto de Venta. administrador = Inventario + POS + gestión de usuarios.';
-comment on column perfiles.es_dueno is 'true SOLO para el primer usuario que se registró en el sistema (el dueño). Nadie -- ni otro administrador -- puede cambiarle el rol ni eliminarlo. Solo el dueño puede eliminar usuarios.';
-
--- Si la tabla YA existía de antes (proyecto en uso), el "create table if not
--- exists" de arriba no le agrega la columna nueva a una tabla que ya existe.
--- Esta línea la agrega de forma seguridad, sin importar si la tabla es
--- nueva o ya tenía datos -- se puede correr las veces que hagan falta.
-alter table perfiles add column if not exists es_dueno boolean not null default false;
+comment on column perfiles.es_dueno is 'true SOLO para la primera persona que se registró en este proyecto (el dueño del negocio). Es el único que puede eliminar usuarios, y es el único cuyo rol nadie más puede cambiar — ni siquiera otro administrador. Se asigna una sola vez, automáticamente, y no se reasigna desde el panel.';
 
 
 -- -----------------------------------------------------------------------------
@@ -111,10 +105,11 @@ declare
 begin
   -- Si todavía no existe NINGÚN perfil en este proyecto, esta es la primera
   -- persona en registrarse: se convierte automáticamente en administrador
-  -- Y en el "dueño" del sistema (es_dueno = true), sin necesidad de tocar el
-  -- SQL Editor. El dueño es intocable: nadie puede cambiarle el rol ni
-  -- eliminarlo, ni siquiera otro administrador. Todo el que se registre
-  -- después entra como 'sin_permisos', esperando que se le asigne rol.
+  -- Y en "dueño" (es_dueno = true) — sin ir a revisión, sin tocar el SQL
+  -- Editor. Ser "dueño" es un dato aparte del rol: nunca se reasigna, ni
+  -- siquiera si este primer usuario asciende a otros a administrador.
+  -- Todo el que se registre después entra como 'sin_permisos', como de
+  -- costumbre, a la espera de que se le asigne rol.
   if (select count(*) from perfiles) = 0 then
     v_rol := 'administrador';
     v_es_dueno := true;
@@ -171,24 +166,23 @@ as $$
 $$;
 
 -- Evita que un usuario se auto-asigne un rol distinto al que ya tiene, y
--- protege al dueño: NADIE (ni siquiera otro administrador) puede cambiarle
--- el rol al dueño, ni puede des-marcarlo como dueño. Ambos campos, una vez
--- fijados por el trigger de registro, quedan bloqueados para siempre.
+-- protege al "dueño" (es_dueno = true): a partir de aquí, NADIE puede
+-- cambiarle el rol al dueño — ni siquiera otro administrador que él mismo
+-- haya ascendido. El dueño solo se puede reasignar manualmente desde el
+-- SQL Editor (ver sección 6 más abajo), nunca desde el panel.
 create or replace function prevent_rol_escalation()
 returns trigger
 language plpgsql security definer set search_path = public
 as $$
 begin
-  if OLD.es_dueno = true then
-    NEW.rol := OLD.rol;       -- el rol del dueño nunca cambia, lo pida quien lo pida
-    NEW.es_dueno := true;     -- y nunca deja de ser el dueño
+  if OLD.es_dueno = true and NEW.rol is distinct from OLD.rol then
+    NEW.rol := OLD.rol;
     return NEW;
   end if;
 
   if NEW.rol is distinct from OLD.rol and not is_admin() then
     NEW.rol := OLD.rol;
   end if;
-  NEW.es_dueno := OLD.es_dueno; -- es_dueno jamás se toca desde la aplicación
   return NEW;
 end;
 $$;
@@ -235,11 +229,10 @@ create policy "actualizar_propio_perfil_o_admin" on perfiles
 
 drop policy if exists "admin_elimina_perfiles" on perfiles;
 create policy "admin_elimina_perfiles" on perfiles
-  for delete using (is_admin() and id <> auth.uid() and es_dueno = false);
--- "id <> auth.uid()" y "es_dueno = false" son una segunda capa de protección
--- a nivel de base de datos: ni siquiera un administrador puede borrar su
--- propia cuenta ni la del dueño desde aquí (aunque alguien manipulara el
--- código del sitio para saltarse el
+  for delete using (is_admin() and id <> auth.uid());
+-- "id <> auth.uid()" es una segunda capa de protección a nivel de base de
+-- datos: ni siquiera un administrador puede borrar su propia cuenta desde
+-- aquí (aunque alguien manipulara el código del sitio para saltarse el
 -- botón deshabilitado, la base de datos igual lo rechazaría).
 
 -- ===== productos (solo admin escribe, todo el staff lee) =====
@@ -318,32 +311,32 @@ end $$;
 -- =============================================================================
 -- 6. CÓMO CREARTE A TI MISMO COMO ADMINISTRADOR (léelo, no se ejecuta solo)
 -- =============================================================================
--- Paso 1: Regístrate normalmente desde la página web (index.html) con tu
---         correo real. Tu cuenta quedará con rol = 'sin_permisos'.
--- Paso 2: Vuelve a este SQL Editor y ejecuta (cambia el correo por el tuyo):
+-- Con la mejora de la sección 2.1, esto ya NO hace falta en el uso normal:
+-- la primera persona que se registra en un proyecto nuevo queda como
+-- administrador y "dueño" automáticamente. Este bloque es solo para el caso
+-- de emergencia en que necesites ascender a alguien manualmente por SQL.
 --
+-- IMPORTANTE: la tabla perfiles tiene un candado (trigger
+-- trg_prevent_rol_escalation) que evita que nadie se auto-asigne un rol
+-- desde el navegador. Ese candado también bloquea, en silencio, un UPDATE
+-- hecho a mano desde este SQL Editor. Por eso hay que apagarlo, hacer el
+-- cambio, y volver a prenderlo — nunca dejarlo apagado:
+--
+--   alter table perfiles disable trigger trg_prevent_rol_escalation;
 --   update perfiles set rol = 'administrador'
---   where id = (select id from auth.users where email = 'tu-correo@ejemplo.com');
---
--- Con eso ya puedes entrar como administrador y desde el panel de
--- "Usuarios" asignarle rol a todos los demás (cajero / administrador)
--- sin volver a tocar el SQL Editor nunca más.
+--   where id = (select id from auth.users where email = 'correo-a-ascender@ejemplo.com');
+--   alter table perfiles enable trigger trg_prevent_rol_escalation;
 -- =============================================================================
 
 
 -- =============================================================================
--- 7. MIGRACIÓN ÚNICA — marcar al dueño en un proyecto que YA tenía usuarios
+-- 7. MIGRACIÓN: marca a Luis Morris como dueño (proyecto farmacontrol-one)
 -- =============================================================================
--- Esto SOLO hace falta correrlo una vez, en un proyecto que ya existía antes
--- de que se agregara el concepto de "dueño" (es_dueno). En un proyecto
--- totalmente nuevo, el trigger de la sección 2.1 ya marca al primer
--- registrado automáticamente y este bloque no hace nada (no encuentra a
--- nadie a quién corregir).
---
--- Verifica primero que nadie más quedó marcado como dueño por error:
---   select id, nombre, apellido, es_dueno from perfiles where es_dueno = true;
---
--- Y luego marca al dueño real (cambia el correo si no es este):
-update perfiles set es_dueno = true
-where id = (select id from auth.users where email = 'morrisluis1982@gmail.com');
--- =============================================================================
+-- Este proyecto ya tenía usuarios registrados ANTES de que existiera el
+-- concepto de "dueño", así que hay que marcarlo a mano una sola vez.
+-- Es seguro correr este bloque aunque ya lo hayas corrido antes.
+do $$
+begin
+  update perfiles set es_dueno = true
+  where id = (select id from auth.users where email = 'morrisluis1982@gmail.com');
+end $$;

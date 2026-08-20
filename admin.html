@@ -42,7 +42,6 @@
           <p class="text-sm font-semibold leading-tight" id="nombre-usuario" style="color:var(--text-1);">—</p>
           <p class="text-[10px]" style="color:var(--text-3);">Administrador</p>
         </div>
-        <button onclick="bloquearPantalla()" title="Bloquear pantalla" class="w-9 h-9 rounded-lg flex items-center justify-center transition glass" style="color:var(--text-2);">🔒</button>
         <a href="#" onclick="cerrarSesionGlobal()" class="ml-2 px-3 py-2 text-xs font-bold rounded-lg transition" style="color:var(--red-ink);">Salir</a>
       </div>
     </div>
@@ -124,7 +123,10 @@
           <div><label class="block text-xs font-bold uppercase mb-2" style="color:var(--text-3);">Cantidad</label>
             <input type="number" min="1" id="mov-cantidad" placeholder="1" class="input-dark w-full px-4 py-2.5 rounded-xl text-sm"></div>
           <div><label class="block text-xs font-bold uppercase mb-2" style="color:var(--text-3);">N° Lote</label>
-            <div class="flex gap-1.5"><select id="mov-lote-letra" class="input-dark px-2 py-2.5 rounded-xl text-sm font-mono"><option>A</option><option>B</option><option>C</option><option>D</option><option>E</option><option>F</option><option>G</option><option>H</option><option>I</option><option>J</option><option>K</option><option>L</option><option>M</option><option>N</option><option>O</option><option>P</option><option>Q</option><option>R</option><option>S</option><option>T</option><option>U</option><option>V</option><option>W</option><option>X</option><option>Y</option><option>Z</option></select><input type="text" id="mov-lote-digitos" maxlength="4" inputmode="numeric" placeholder="1024" oninput="this.value=this.value.replace(/\D/g,'').slice(0,4)" class="input-dark w-full px-3 py-2.5 rounded-xl text-sm font-mono"></div></div>
+            <div class="flex gap-1.5">
+              <select id="mov-lote-letra" class="select-lote-letra input-dark px-2 py-2.5 rounded-xl text-sm w-16 font-mono"></select>
+              <input type="text" id="mov-lote-num4" placeholder="3455" maxlength="4" inputmode="numeric" oninput="this.value=this.value.replace(/\D/g,'').slice(0,4)" class="input-dark w-full px-4 py-2.5 rounded-xl text-sm font-mono">
+            </div></div>
           <div><label class="block text-xs font-bold uppercase mb-2" style="color:var(--text-3);">Vence (lote)</label>
             <input type="month" id="mov-vence" class="input-dark w-full px-4 py-2.5 rounded-xl text-sm" oninput="validarFechaVencimiento('mov-vence','mov-vence-error')"></div>
           <p id="mov-vence-error" class="hidden text-xs -mt-3 col-span-full" style="color:var(--red-ink);"></p>
@@ -251,7 +253,12 @@
         <div id="lote-inicial-wrap" class="pt-5" style="border-top:1px solid var(--border-soft);">
           <h4 class="text-sm font-bold mb-3" style="color:var(--text-1);">Lote Inicial</h4>
           <div class="grid grid-cols-3 gap-3">
-            <div><label class="block text-[10px] font-bold uppercase mb-1.5" style="color:var(--text-3);">N° Lote</label><div class="flex gap-1.5"><select id="prod-lote-letra" class="input-dark px-2 py-2.5 rounded-xl text-sm font-mono"><option>A</option><option>B</option><option>C</option><option>D</option><option>E</option><option>F</option><option>G</option><option>H</option><option>I</option><option>J</option><option>K</option><option>L</option><option>M</option><option>N</option><option>O</option><option>P</option><option>Q</option><option>R</option><option>S</option><option>T</option><option>U</option><option>V</option><option>W</option><option>X</option><option>Y</option><option>Z</option></select><input type="text" id="prod-lote-digitos" maxlength="4" inputmode="numeric" placeholder="1024" oninput="this.value=this.value.replace(/\D/g,'').slice(0,4)" class="input-dark w-full px-3 py-2.5 rounded-xl text-sm font-mono"></div></div>
+            <div><label class="block text-[10px] font-bold uppercase mb-1.5" style="color:var(--text-3);">N° Lote</label>
+              <div class="flex gap-1.5">
+                <select id="prod-lote-letra" class="select-lote-letra input-dark px-2 py-2.5 rounded-xl text-sm w-16 font-mono"></select>
+                <input type="text" id="prod-lote-num4" placeholder="3455" maxlength="4" inputmode="numeric" oninput="this.value=this.value.replace(/\D/g,'').slice(0,4)" class="input-dark w-full px-3 py-2.5 rounded-xl text-sm font-mono">
+              </div>
+            </div>
             <div><label class="block text-[10px] font-bold uppercase mb-1.5" style="color:var(--text-3);">Vence</label><input type="month" id="prod-lote-vence" class="input-dark w-full px-3 py-2.5 rounded-xl text-sm" oninput="validarFechaVencimiento('prod-lote-vence','prod-lote-vence-error')"></div>
             <div><label class="block text-[10px] font-bold uppercase mb-1.5" style="color:var(--text-3);">Cantidad</label><input type="number" min="0" id="prod-lote-cantidad" placeholder="0" class="input-dark w-full px-3 py-2.5 rounded-xl text-sm"></div>
           </div>
@@ -272,7 +279,12 @@
       <p class="text-xs mb-5" id="stock-info" style="color:var(--text-3);"></p>
       <div id="stock-lotes-actuales" class="space-y-2 mb-5"></div>
       <div class="grid grid-cols-2 gap-3 mb-1">
-        <div><label class="block text-[10px] font-bold uppercase mb-1.5" style="color:var(--text-3);">N° Lote</label><div class="flex gap-1.5"><select id="stock-lote-letra" class="input-dark px-2 py-2.5 rounded-xl text-sm font-mono"><option>A</option><option>B</option><option>C</option><option>D</option><option>E</option><option>F</option><option>G</option><option>H</option><option>I</option><option>J</option><option>K</option><option>L</option><option>M</option><option>N</option><option>O</option><option>P</option><option>Q</option><option>R</option><option>S</option><option>T</option><option>U</option><option>V</option><option>W</option><option>X</option><option>Y</option><option>Z</option></select><input type="text" id="stock-lote-digitos" maxlength="4" inputmode="numeric" placeholder="1024" oninput="this.value=this.value.replace(/\D/g,'').slice(0,4)" class="input-dark w-full px-3 py-2.5 rounded-xl text-sm font-mono"></div></div>
+        <div><label class="block text-[10px] font-bold uppercase mb-1.5" style="color:var(--text-3);">N° Lote</label>
+          <div class="flex gap-1.5">
+            <select id="stock-lote-letra" class="select-lote-letra input-dark px-2 py-2.5 rounded-xl text-sm w-16 font-mono"></select>
+            <input type="text" id="stock-lote-num4" placeholder="3455" maxlength="4" inputmode="numeric" oninput="this.value=this.value.replace(/\D/g,'').slice(0,4)" class="input-dark w-full px-3 py-2.5 rounded-xl text-sm font-mono">
+          </div>
+        </div>
         <div><label class="block text-[10px] font-bold uppercase mb-1.5" style="color:var(--text-3);">Vence</label><input type="month" id="stock-vence" class="input-dark w-full px-3 py-2.5 rounded-xl text-sm" oninput="validarFechaVencimiento('stock-vence','stock-vence-error')"></div>
       </div>
       <p id="stock-vence-error" class="hidden text-xs mb-4" style="color:var(--red-ink);"></p>
