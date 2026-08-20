@@ -10,12 +10,27 @@ let miPerfil = null;
 
 function stockTotal(p) { return (p.lotes || []).reduce((s, l) => s + l.cantidad, 0); }
 
+// Llena todos los <select class="select-lote-letra"> con A-Z
+function poblarLetrasLote() {
+  const opciones = Array.from({ length: 26 }, (_, i) => String.fromCharCode(65 + i))
+    .map(l => `<option value="${l}">${l}</option>`).join('');
+  document.querySelectorAll('.select-lote-letra').forEach(sel => { sel.innerHTML = opciones; });
+}
+
+// Combina letra + 4 dígitos en un solo número de lote, ej. "A" + "3455" -> "A3455"
+function leerLote(prefijoId) {
+  const letra = document.getElementById(prefijoId + '-letra').value;
+  const numero = document.getElementById(prefijoId + '-num4').value.trim();
+  return numero ? (letra + numero) : '';
+}
+
 (async () => {
   const auth = await requireRol(['administrador']);
   if (!auth) return;
   miPerfil = auth.perfil;
   document.getElementById('nombre-usuario').textContent = miPerfil.nombre + ' ' + miPerfil.apellido;
   document.getElementById('avatar-inicial').textContent = (miPerfil.nombre[0] || 'A').toUpperCase();
+  poblarLetrasLote();
   await cargarTodo();
 })();
 
@@ -178,7 +193,7 @@ function abrirModalProducto() {
   document.getElementById('prod-id').value = '';
   ['nombre', 'barra', 'minimo', 'precio', 'fabricante', 'proveedor', 'laboracion', 'lote-vence', 'lote-cantidad']
     .forEach(id => document.getElementById('prod-' + id).value = '');
-  document.getElementById('prod-lote-digitos').value = '';
+  document.getElementById('prod-lote-num4').value = '';
   document.getElementById('prod-lote-letra').value = 'A';
   document.getElementById('prod-categoria').value = 'Medicamentos';
   document.getElementById('modal-producto-titulo').textContent = 'Nuevo Producto';
@@ -228,7 +243,7 @@ async function guardarProducto() {
     if (loteVencePrevio && !validarFechaVencimiento('prod-lote-vence', 'prod-lote-vence-error')) { return; }
     const { data: nuevo, error } = await supabaseClient.from('productos').insert(data).select().single();
     if (error) { alert('Error al guardar: ' + error.message); return; }
-    const loteNum = leerLote('prod-lote-letra', 'prod-lote-digitos');
+    const loteNum = leerLote('prod-lote');
     const loteVence = document.getElementById('prod-lote-vence').value;
     const loteCant = parseInt(document.getElementById('prod-lote-cantidad').value) || 0;
     if (loteNum && loteVence && loteCant > 0) {
@@ -292,7 +307,8 @@ function abrirStockModal(id) {
     ? '<p class="text-[10px] font-bold uppercase mb-2" style="color:var(--text-3);">Lotes actuales:</p>' +
       p.lotes.map(l => `<div class="flex justify-between items-center px-4 py-2.5 rounded-lg text-xs font-medium" style="${lotesColor(l.vence)}"><span class="font-mono">${l.numero}</span><span>Vence: ${l.vence}</span><span class="font-bold">${l.cantidad}u</span></div>`).join('')
     : '';
-  document.getElementById('stock-lote-digitos').value = ''; document.getElementById('stock-lote-letra').value = 'A';
+  document.getElementById('stock-lote-num4').value = '';
+  document.getElementById('stock-lote-letra').value = 'A';
   document.getElementById('stock-vence').value = '';
   document.getElementById('stock-cantidad').value = '';
   document.getElementById('stock-motivo').value = '';
@@ -300,29 +316,42 @@ function abrirStockModal(id) {
   abrirModal('modal-stock');
 }
 
+let guardandoStock = false;
 async function confirmarStock() {
+  if (guardandoStock) return; // evita duplicados si se toca el botón varias veces seguidas
   const cantidad = parseInt(document.getElementById('stock-cantidad').value) || 0;
   const p = productos.find(x => x.id === stockIdActual);
   if (!p) return;
-  const loteNum = leerLote('stock-lote-letra', 'stock-lote-digitos');
+  const loteNum = leerLote('stock-lote');
   const loteVenceInput = document.getElementById('stock-vence').value;
   const motivo = document.getElementById('stock-motivo').value || 'Carga de stock';
 
   if (cantidad <= 0) { alert('Indica la cantidad que está entrando (mayor a 0).'); return; }
-  if (!loteNum || !loteVenceInput) { alert('El número de lote y la fecha de vencimiento son obligatorios para cargar stock.'); return; }
+  if (!loteNum || !loteVenceInput) { alert('El número de lote (letra + 4 dígitos) y la fecha de vencimiento son obligatorios para cargar stock.'); return; }
   if (!validarFechaVencimiento('stock-vence', 'stock-vence-error')) { return; }
 
-  const vence = loteVenceInput + '-01';
-  const existente = p.lotes.find(l => l.numero === loteNum);
-  if (existente) {
-    await supabaseClient.from('lotes').update({ cantidad: existente.cantidad + cantidad, vence }).eq('id', existente.id);
-  } else {
-    await supabaseClient.from('lotes').insert({ producto_id: p.id, producto_nombre: p.nombre, numero: loteNum, vence, cantidad });
-  }
-  await registrarMovimientoDirecto('Entrada', p.id, p.nombre, cantidad, loteNum, motivo);
+  const btn = document.getElementById('btn-confirmar-carga');
+  guardandoStock = true;
+  const textoOriginal = btn ? btn.innerHTML : '';
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Guardando...'; }
 
-  cerrarModal('modal-stock');
-  await cargarTodo();
+  try {
+    const vence = loteVenceInput + '-01';
+    const loteNumNorm = loteNum.toLowerCase();
+    const existente = p.lotes.find(l => l.numero.trim().toLowerCase() === loteNumNorm);
+    if (existente) {
+      await supabaseClient.from('lotes').update({ cantidad: existente.cantidad + cantidad, vence }).eq('id', existente.id);
+    } else {
+      await supabaseClient.from('lotes').insert({ producto_id: p.id, producto_nombre: p.nombre, numero: loteNum, vence, cantidad });
+    }
+    await registrarMovimientoDirecto('Entrada', p.id, p.nombre, cantidad, loteNum, motivo);
+
+    cerrarModal('modal-stock');
+    await cargarTodo();
+  } finally {
+    guardandoStock = false;
+    if (btn) { btn.disabled = false; btn.innerHTML = textoOriginal; }
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -347,7 +376,9 @@ function abrirDescargoModal(id) {
   abrirModal('modal-descargo');
 }
 
+let guardandoDescargo = false;
 async function confirmarDescargo() {
+  if (guardandoDescargo) return;
   const p = productos.find(x => x.id === descargoIdActual);
   if (!p) return;
   const loteId = parseInt(document.getElementById('descargo-lote').value);
@@ -360,15 +391,25 @@ async function confirmarDescargo() {
   if (cantidad <= 0) { alert('Indica la cantidad a descargar (mayor a 0).'); return; }
   if (cantidad > lote.cantidad) { alert(`Ese lote solo tiene ${lote.cantidad} unidades disponibles.`); return; }
 
-  const nuevaCant = lote.cantidad - cantidad;
-  if (nuevaCant === 0) await supabaseClient.from('lotes').delete().eq('id', lote.id);
-  else await supabaseClient.from('lotes').update({ cantidad: nuevaCant }).eq('id', lote.id);
+  const btn = document.getElementById('btn-confirmar-descargo');
+  guardandoDescargo = true;
+  const textoOriginal = btn ? btn.innerHTML : '';
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Guardando...'; }
 
-  const motivoCompleto = `Descargo: ${motivo}` + (nota ? ` — ${nota}` : '');
-  await registrarMovimientoDirecto('Salida', p.id, p.nombre, cantidad, lote.numero, motivoCompleto);
+  try {
+    const nuevaCant = lote.cantidad - cantidad;
+    if (nuevaCant === 0) await supabaseClient.from('lotes').delete().eq('id', lote.id);
+    else await supabaseClient.from('lotes').update({ cantidad: nuevaCant }).eq('id', lote.id);
 
-  cerrarModal('modal-descargo');
-  await cargarTodo();
+    const motivoCompleto = `Descargo: ${motivo}` + (nota ? ` — ${nota}` : '');
+    await registrarMovimientoDirecto('Salida', p.id, p.nombre, cantidad, lote.numero, motivoCompleto);
+
+    cerrarModal('modal-descargo');
+    await cargarTodo();
+  } finally {
+    guardandoDescargo = false;
+    if (btn) { btn.disabled = false; btn.innerHTML = textoOriginal; }
+  }
 }
 
 async function registrarMovimientoDirecto(tipo, producto_id, producto, cantidad, lote, motivo) {
@@ -388,7 +429,7 @@ async function registrarMovimiento() {
   const tipo = document.getElementById('mov-tipo').value;
   const pid = parseInt(document.getElementById('mov-producto').value);
   const cantidad = parseInt(document.getElementById('mov-cantidad').value) || 0;
-  const loteNum = leerLote('mov-lote-letra', 'mov-lote-digitos');
+  const loteNum = leerLote('mov-lote');
   const loteVenceInput = document.getElementById('mov-vence').value;
   const motivo = document.getElementById('mov-motivo').value;
   if (!pid || cantidad <= 0) { alert('Selecciona producto y cantidad válida'); return; }
@@ -397,7 +438,8 @@ async function registrarMovimiento() {
   if (!p) return;
 
   if (tipo === 'Entrada') {
-    const existente = loteNum ? p.lotes.find(l => l.numero === loteNum) : null;
+    const loteNumNorm = loteNum.toLowerCase();
+    const existente = loteNum ? p.lotes.find(l => l.numero.trim().toLowerCase() === loteNumNorm) : null;
     if (existente) {
       const upd = { cantidad: existente.cantidad + cantidad };
       if (loteVenceInput) upd.vence = loteVenceInput + '-01';
@@ -416,7 +458,8 @@ async function registrarMovimiento() {
   }
   await registrarMovimientoDirecto(tipo, pid, p.nombre, cantidad, loteNum || 'N/A', motivo);
   document.getElementById('mov-cantidad').value = '';
-  document.getElementById('mov-lote-digitos').value = ''; document.getElementById('mov-lote-letra').value = 'A';
+  document.getElementById('mov-lote-num4').value = '';
+  document.getElementById('mov-lote-letra').value = 'A';
   document.getElementById('mov-motivo').value = '';
   await cargarTodo();
 }
@@ -449,21 +492,21 @@ function renderUsuarios() {
   tbody.innerHTML = usuarios.map(u => `
     <tr style="border-bottom:1px solid var(--border-soft);">
       <td class="p-4 pl-7">
-        <p class="text-sm font-bold flex items-center gap-1.5" style="color:var(--text-1);">${escapeHtml(u.nombre)} ${escapeHtml(u.apellido)} ${u.es_dueno ? '<span title="Dueño del sistema">👑</span>' : ''}</p>
+        <p class="text-sm font-bold" style="color:var(--text-1);">${escapeHtml(u.nombre)} ${escapeHtml(u.apellido)}</p>
       </td>
       <td class="p-4 text-sm font-mono" style="color:var(--text-2);">${u.tipo_cedula}-${escapeHtml(u.cedula)}</td>
       <td class="p-4 text-sm" style="color:var(--text-2);">${escapeHtml(u.telefono || '—')}</td>
       <td class="p-4"><span class="badge-rol badge-${u.rol}">${etiquetaRol(u.rol)}</span></td>
       <td class="p-4">
-        <select onchange="cambiarRol('${u.id}', this.value)" class="input-dark px-3 py-2 rounded-lg text-xs" ${(u.id === miPerfil.id || u.es_dueno) ? `disabled title="${u.es_dueno ? 'El rol del dueño no se puede cambiar' : 'No puedes cambiar tu propio rol'}"` : ''}>
+        <select onchange="cambiarRol('${u.id}', this.value)" class="input-dark px-3 py-2 rounded-lg text-xs" ${u.id === miPerfil.id ? 'disabled title="No puedes cambiar tu propio rol"' : ''}>
           <option value="sin_permisos" ${u.rol === 'sin_permisos' ? 'selected' : ''}>Sin permisos</option>
           <option value="cajero" ${u.rol === 'cajero' ? 'selected' : ''}>Cajero</option>
           <option value="administrador" ${u.rol === 'administrador' ? 'selected' : ''}>Administrador</option>
         </select>
       </td>
       <td class="p-4 pr-7">
-        ${(u.id === miPerfil.id || u.es_dueno || !miPerfil.es_dueno)
-          ? `<span class="text-xs" style="color:var(--text-3);" title="${u.es_dueno ? 'El dueño no se puede eliminar' : u.id === miPerfil.id ? 'No puedes eliminar tu propia cuenta' : 'Solo el dueño del sistema puede eliminar usuarios'}">—</span>`
+        ${(u.id === miPerfil.id || !miPerfil.es_dueno)
+          ? `<span class="text-xs" style="color:var(--text-3);" title="${u.id === miPerfil.id ? 'No puedes eliminar tu propia cuenta' : 'Solo el dueño del sistema puede eliminar usuarios'}">—</span>`
           : `<button onclick="eliminarUsuario('${u.id}', '${escapeHtml(u.nombre)} ${escapeHtml(u.apellido)}')" class="p-2 rounded-lg transition text-lg" style="color:var(--red-ink);" title="Eliminar del sistema por completo">🗑️</button>`}
       </td>
     </tr>`).join('');
@@ -517,15 +560,6 @@ function abrirBarcodeModal(id) {
   abrirModal('modal-barcode');
 }
 function escapeHtml(str) { return String(str ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
-
-// Combina el selector de letra + los 4 dígitos en un solo código de lote (ej: "A1024").
-// Devuelve '' si los 4 dígitos no están completos, para que el formulario lo trate como vacío.
-function leerLote(idLetra, idDigitos) {
-  const letra = document.getElementById(idLetra).value;
-  const digitos = document.getElementById(idDigitos).value.trim();
-  if (digitos.length !== 4) return '';
-  return letra + digitos;
-}
 
 // ---------------------------------------------------------------------------
 // REPORTES (ventas del día + movimientos categorizados del día)
