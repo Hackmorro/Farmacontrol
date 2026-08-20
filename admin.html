@@ -99,7 +99,7 @@
           </div>
         </div>
         <div class="p-7">
-          <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6" id="productos-grid"></div>
+          <div class="grid grid-cols-2 md:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-6" id="productos-grid"></div>
           <p id="sin-resultados" class="hidden text-center py-10 text-sm" style="color:var(--text-3);">Sin resultados.</p>
         </div>
       </div>
@@ -243,9 +243,10 @@
               </div>
               <label class="flex items-start gap-2 text-[11px] leading-snug" style="color:var(--text-3);">
                 <input type="checkbox" id="prod-imagen-fondoblanco" checked class="mt-0.5">
-                <span>Fondo blanco automático (mejor resultado con la foto sobre una superficie clara)</span>
+                <span>Quitar fondo y ponerlo en blanco automáticamente (con IA — la primera vez puede tardar unos segundos)</span>
               </label>
               <input type="file" id="prod-imagen-input" accept="image/*" class="hidden" onchange="previsualizarImagenProducto(this)">
+              <p id="prod-imagen-estado" class="hidden text-[10px]" style="color:var(--text-3);">Quitando el fondo con IA… la primera vez puede tardar unos segundos.</p>
             </div>
           </div>
         </div>
