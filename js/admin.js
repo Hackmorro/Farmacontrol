@@ -115,7 +115,7 @@ function renderProductos() {
   productos.forEach(p => {
     const bajo = stockTotal(p) <= p.minimo;
     const div = document.createElement('div');
-    div.className = 'producto-card rounded-2xl p-5';
+    div.className = 'producto-card rounded-2xl p-3 sm:p-5';
     div.dataset.id = p.id; div.dataset.nombre = p.nombre.toLowerCase(); div.dataset.barra = (p.codigo_barra || '').toLowerCase();
     div.innerHTML = `
       <div class="flex items-start justify-between mb-4">
@@ -137,7 +137,7 @@ function renderProductos() {
         </div>
       </div>
       <div class="pt-3.5 mb-4 space-y-1.5" style="border-top:1px solid var(--border-soft);">
-        ${p.codigo_barra ? `<div class="flex items-center gap-2"><span class="text-[10px] w-16" style="color:var(--text-3);">Barra:</span><svg class="barcode-mini" data-code="${p.codigo_barra}" width="80" height="18"></svg></div>` : ''}
+        ${p.codigo_barra ? `<div class="flex items-center gap-2"><span class="text-[10px] w-16" style="color:var(--text-3);">Barra:</span><div class="flex-1 flex justify-center"><svg class="barcode-mini" data-code="${p.codigo_barra}" width="80" height="18"></svg></div></div>` : ''}
         ${p.fabricante ? `<div class="flex items-center gap-2"><span class="text-[10px] w-16" style="color:var(--text-3);">Fabrica:</span><span class="text-[11px]" style="color:var(--text-2);">${escapeHtml(p.fabricante)}</span></div>` : ''}
         ${p.proveedor ? `<div class="flex items-center gap-2"><span class="text-[10px] w-16" style="color:var(--text-3);">Surte:</span><span class="text-[11px]" style="color:var(--text-2);">${escapeHtml(p.proveedor)}</span></div>` : ''}
       </div>
@@ -248,6 +248,7 @@ function resetImagenProductoUI() {
   document.getElementById('prod-imagen-quitar').classList.add('hidden');
   document.getElementById('prod-imagen-fondoblanco').checked = true;
   document.getElementById('prod-imagen-btn-txt').textContent = 'Adjuntar foto';
+  document.getElementById('prod-imagen-estado').classList.add('hidden');
 }
 
 async function previsualizarImagenProducto(input) {
@@ -256,11 +257,13 @@ async function previsualizarImagenProducto(input) {
   const loader = document.getElementById('prod-imagen-loader');
   const preview = document.getElementById('prod-imagen-preview');
   const placeholder = document.getElementById('prod-imagen-placeholder');
+  const estado = document.getElementById('prod-imagen-estado');
   loader.classList.remove('hidden');
   placeholder.classList.add('hidden');
   preview.classList.add('hidden');
+  const fondoBlanco = document.getElementById('prod-imagen-fondoblanco').checked;
+  estado.classList.toggle('hidden', !fondoBlanco);
   try {
-    const fondoBlanco = document.getElementById('prod-imagen-fondoblanco').checked;
     const blob = await procesarFotoProducto(file, { fondoBlanco });
     prodImagenBlob = blob;
     prodImagenEliminar = false;
@@ -274,6 +277,7 @@ async function previsualizarImagenProducto(input) {
     placeholder.classList.toggle('hidden', preview.src && !preview.classList.contains('hidden'));
   } finally {
     loader.classList.add('hidden');
+    estado.classList.add('hidden');
     input.value = '';
   }
 }

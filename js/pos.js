@@ -30,7 +30,7 @@ let categoriaActual = 'Todos';
 function renderProductos() {
   const cont = document.getElementById('productos-container');
   cont.innerHTML = productos.map(p => `
-    <div class="card-producto p-5 rounded-2xl flex flex-col justify-between producto" data-categoria="${p.categoria}" data-id="${p.id}" data-nombre="${p.nombre.toLowerCase()}" data-barra="${(p.codigo_barra || '').toLowerCase()}">
+    <div class="card-producto p-3 sm:p-5 rounded-2xl flex flex-col justify-between producto" data-categoria="${p.categoria}" data-id="${p.id}" data-nombre="${p.nombre.toLowerCase()}" data-barra="${(p.codigo_barra || '').toLowerCase()}">
       <div>
         ${p.imagen_url ? `<div class="w-full aspect-square rounded-xl overflow-hidden mb-3" style="background:#fff;"><img src="${p.imagen_url}" class="w-full h-full object-contain" loading="lazy"></div>` : ''}
         <div class="flex justify-between items-start mb-3">
@@ -39,7 +39,7 @@ function renderProductos() {
         </div>
         <h4 class="font-bold text-sm leading-snug" style="color:var(--text-1);">${escapeHtml(p.nombre)}</h4>
         <p class="text-xs mt-1.5" style="color:var(--text-3);">${escapeHtml(p.categoria)}</p>
-        ${p.codigo_barra ? `<div class="mt-3 rounded-lg py-1.5 px-2" style="overflow:hidden; background:var(--tint-1);"><svg class="barcode-mini" data-code="${p.codigo_barra}"></svg></div>` : ''}
+        ${p.codigo_barra ? `<div class="mt-3 rounded-lg py-1.5 px-2 flex justify-center" style="overflow:hidden; background:var(--tint-1);"><svg class="barcode-mini" data-code="${p.codigo_barra}"></svg></div>` : ''}
         ${p.fabricante ? `<p class="text-[10px] mt-2" style="color:var(--text-3);">🏭 ${escapeHtml(p.fabricante)} | 📦 ${escapeHtml(p.proveedor || '')}</p>` : ''}
       </div>
       <div class="mt-5 pt-4 space-y-3" style="border-top:1px solid var(--border-soft);">
