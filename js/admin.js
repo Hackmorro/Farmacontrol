@@ -176,8 +176,10 @@ function renderAlertas() {
 // ---------------------------------------------------------------------------
 function abrirModalProducto() {
   document.getElementById('prod-id').value = '';
-  ['nombre', 'barra', 'minimo', 'precio', 'fabricante', 'proveedor', 'laboracion', 'lote-numero', 'lote-vence', 'lote-cantidad']
+  ['nombre', 'barra', 'minimo', 'precio', 'fabricante', 'proveedor', 'laboracion', 'lote-vence', 'lote-cantidad']
     .forEach(id => document.getElementById('prod-' + id).value = '');
+  document.getElementById('prod-lote-digitos').value = '';
+  document.getElementById('prod-lote-letra').value = 'A';
   document.getElementById('prod-categoria').value = 'Medicamentos';
   document.getElementById('modal-producto-titulo').textContent = 'Nuevo Producto';
   document.getElementById('modal-producto-icono').textContent = '➕';
@@ -226,7 +228,7 @@ async function guardarProducto() {
     if (loteVencePrevio && !validarFechaVencimiento('prod-lote-vence', 'prod-lote-vence-error')) { return; }
     const { data: nuevo, error } = await supabaseClient.from('productos').insert(data).select().single();
     if (error) { alert('Error al guardar: ' + error.message); return; }
-    const loteNum = document.getElementById('prod-lote-numero').value.trim();
+    const loteNum = leerLote('prod-lote-letra', 'prod-lote-digitos');
     const loteVence = document.getElementById('prod-lote-vence').value;
     const loteCant = parseInt(document.getElementById('prod-lote-cantidad').value) || 0;
     if (loteNum && loteVence && loteCant > 0) {
@@ -290,7 +292,7 @@ function abrirStockModal(id) {
     ? '<p class="text-[10px] font-bold uppercase mb-2" style="color:var(--text-3);">Lotes actuales:</p>' +
       p.lotes.map(l => `<div class="flex justify-between items-center px-4 py-2.5 rounded-lg text-xs font-medium" style="${lotesColor(l.vence)}"><span class="font-mono">${l.numero}</span><span>Vence: ${l.vence}</span><span class="font-bold">${l.cantidad}u</span></div>`).join('')
     : '';
-  document.getElementById('stock-lote').value = '';
+  document.getElementById('stock-lote-digitos').value = ''; document.getElementById('stock-lote-letra').value = 'A';
   document.getElementById('stock-vence').value = '';
   document.getElementById('stock-cantidad').value = '';
   document.getElementById('stock-motivo').value = '';
@@ -302,7 +304,7 @@ async function confirmarStock() {
   const cantidad = parseInt(document.getElementById('stock-cantidad').value) || 0;
   const p = productos.find(x => x.id === stockIdActual);
   if (!p) return;
-  const loteNum = document.getElementById('stock-lote').value.trim();
+  const loteNum = leerLote('stock-lote-letra', 'stock-lote-digitos');
   const loteVenceInput = document.getElementById('stock-vence').value;
   const motivo = document.getElementById('stock-motivo').value || 'Carga de stock';
 
@@ -386,7 +388,7 @@ async function registrarMovimiento() {
   const tipo = document.getElementById('mov-tipo').value;
   const pid = parseInt(document.getElementById('mov-producto').value);
   const cantidad = parseInt(document.getElementById('mov-cantidad').value) || 0;
-  const loteNum = document.getElementById('mov-lote').value.trim();
+  const loteNum = leerLote('mov-lote-letra', 'mov-lote-digitos');
   const loteVenceInput = document.getElementById('mov-vence').value;
   const motivo = document.getElementById('mov-motivo').value;
   if (!pid || cantidad <= 0) { alert('Selecciona producto y cantidad válida'); return; }
@@ -414,7 +416,7 @@ async function registrarMovimiento() {
   }
   await registrarMovimientoDirecto(tipo, pid, p.nombre, cantidad, loteNum || 'N/A', motivo);
   document.getElementById('mov-cantidad').value = '';
-  document.getElementById('mov-lote').value = '';
+  document.getElementById('mov-lote-digitos').value = ''; document.getElementById('mov-lote-letra').value = 'A';
   document.getElementById('mov-motivo').value = '';
   await cargarTodo();
 }
@@ -447,21 +449,21 @@ function renderUsuarios() {
   tbody.innerHTML = usuarios.map(u => `
     <tr style="border-bottom:1px solid var(--border-soft);">
       <td class="p-4 pl-7">
-        <p class="text-sm font-bold" style="color:var(--text-1);">${escapeHtml(u.nombre)} ${escapeHtml(u.apellido)}</p>
+        <p class="text-sm font-bold flex items-center gap-1.5" style="color:var(--text-1);">${escapeHtml(u.nombre)} ${escapeHtml(u.apellido)} ${u.es_dueno ? '<span title="Dueño del sistema">👑</span>' : ''}</p>
       </td>
       <td class="p-4 text-sm font-mono" style="color:var(--text-2);">${u.tipo_cedula}-${escapeHtml(u.cedula)}</td>
       <td class="p-4 text-sm" style="color:var(--text-2);">${escapeHtml(u.telefono || '—')}</td>
       <td class="p-4"><span class="badge-rol badge-${u.rol}">${etiquetaRol(u.rol)}</span></td>
       <td class="p-4">
-        <select onchange="cambiarRol('${u.id}', this.value)" class="input-dark px-3 py-2 rounded-lg text-xs" ${u.id === miPerfil.id ? 'disabled title="No puedes cambiar tu propio rol"' : ''}>
+        <select onchange="cambiarRol('${u.id}', this.value)" class="input-dark px-3 py-2 rounded-lg text-xs" ${(u.id === miPerfil.id || u.es_dueno) ? `disabled title="${u.es_dueno ? 'El rol del dueño no se puede cambiar' : 'No puedes cambiar tu propio rol'}"` : ''}>
           <option value="sin_permisos" ${u.rol === 'sin_permisos' ? 'selected' : ''}>Sin permisos</option>
           <option value="cajero" ${u.rol === 'cajero' ? 'selected' : ''}>Cajero</option>
           <option value="administrador" ${u.rol === 'administrador' ? 'selected' : ''}>Administrador</option>
         </select>
       </td>
       <td class="p-4 pr-7">
-        ${(u.id === miPerfil.id || !miPerfil.es_dueno)
-          ? `<span class="text-xs" style="color:var(--text-3);" title="${u.id === miPerfil.id ? 'No puedes eliminar tu propia cuenta' : 'Solo el dueño del sistema puede eliminar usuarios'}">—</span>`
+        ${(u.id === miPerfil.id || u.es_dueno || !miPerfil.es_dueno)
+          ? `<span class="text-xs" style="color:var(--text-3);" title="${u.es_dueno ? 'El dueño no se puede eliminar' : u.id === miPerfil.id ? 'No puedes eliminar tu propia cuenta' : 'Solo el dueño del sistema puede eliminar usuarios'}">—</span>`
           : `<button onclick="eliminarUsuario('${u.id}', '${escapeHtml(u.nombre)} ${escapeHtml(u.apellido)}')" class="p-2 rounded-lg transition text-lg" style="color:var(--red-ink);" title="Eliminar del sistema por completo">🗑️</button>`}
       </td>
     </tr>`).join('');
@@ -515,6 +517,15 @@ function abrirBarcodeModal(id) {
   abrirModal('modal-barcode');
 }
 function escapeHtml(str) { return String(str ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+
+// Combina el selector de letra + los 4 dígitos en un solo código de lote (ej: "A1024").
+// Devuelve '' si los 4 dígitos no están completos, para que el formulario lo trate como vacío.
+function leerLote(idLetra, idDigitos) {
+  const letra = document.getElementById(idLetra).value;
+  const digitos = document.getElementById(idDigitos).value.trim();
+  if (digitos.length !== 4) return '';
+  return letra + digitos;
+}
 
 // ---------------------------------------------------------------------------
 // REPORTES (ventas del día + movimientos categorizados del día)
