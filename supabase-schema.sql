@@ -45,8 +45,12 @@ create table if not exists productos (
   fecha_laboracion  date,
   fabricante        text default '',
   proveedor         text default '',
+  imagen_url        text,
   creado_en         timestamptz not null default now()
 );
+
+-- Por si la tabla ya existía de una instalación anterior (sin esta columna)
+alter table productos add column if not exists imagen_url text;
 
 create table if not exists lotes (
   id                bigint generated always as identity primary key,
@@ -340,3 +344,30 @@ begin
   update perfiles set es_dueno = true
   where id = (select id from auth.users where email = 'morrisluis1982@gmail.com');
 end $$;
+
+
+-- =============================================================================
+-- 8. FOTOS DE PRODUCTO — bucket público en Supabase Storage
+-- =============================================================================
+-- Bucket público de solo-lectura (cualquiera con el link ve la foto, como
+-- cualquier ecommerce), pero solo un administrador puede subir/reemplazar/
+-- borrar fotos. Es seguro correr esto aunque ya lo hayas corrido antes.
+insert into storage.buckets (id, name, public)
+values ('productos-fotos', 'productos-fotos', true)
+on conflict (id) do update set public = true;
+
+drop policy if exists "public_lee_fotos_productos" on storage.objects;
+create policy "public_lee_fotos_productos" on storage.objects
+  for select using (bucket_id = 'productos-fotos');
+
+drop policy if exists "admin_sube_fotos_productos" on storage.objects;
+create policy "admin_sube_fotos_productos" on storage.objects
+  for insert with check (bucket_id = 'productos-fotos' and is_admin());
+
+drop policy if exists "admin_actualiza_fotos_productos" on storage.objects;
+create policy "admin_actualiza_fotos_productos" on storage.objects
+  for update using (bucket_id = 'productos-fotos' and is_admin());
+
+drop policy if exists "admin_borra_fotos_productos" on storage.objects;
+create policy "admin_borra_fotos_productos" on storage.objects
+  for delete using (bucket_id = 'productos-fotos' and is_admin());

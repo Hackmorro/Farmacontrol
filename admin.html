@@ -228,6 +228,27 @@
       <div class="space-y-4">
         <div><label class="block text-xs font-bold uppercase tracking-wide mb-2" style="color:var(--text-2);">Nombre *</label>
           <input type="text" id="prod-nombre" placeholder="Ej: Amoxicilina 500mg" class="input-dark w-full px-4 py-3 rounded-xl text-sm"></div>
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wide mb-2" style="color:var(--text-2);">Foto del producto</label>
+          <div class="flex items-center gap-4">
+            <div class="w-24 h-24 rounded-xl overflow-hidden flex items-center justify-center shrink-0 relative" style="background:#fff; border:1px solid var(--border-soft);">
+              <img id="prod-imagen-preview" src="" class="hidden w-full h-full object-contain">
+              <span id="prod-imagen-placeholder" class="text-3xl">💊</span>
+              <div id="prod-imagen-loader" class="spinner hidden absolute inset-0 m-auto"></div>
+            </div>
+            <div class="flex-1 space-y-2 min-w-0">
+              <div class="flex gap-2">
+                <button type="button" onclick="document.getElementById('prod-imagen-input').click()" class="px-4 py-2 text-xs font-bold rounded-xl transition glass" style="color:var(--text-2);">📷 <span id="prod-imagen-btn-txt">Adjuntar foto</span></button>
+                <button type="button" id="prod-imagen-quitar" onclick="quitarImagenProducto()" class="hidden px-3 py-2 text-xs font-bold rounded-xl transition" style="background:rgba(251,113,133,.1); color:var(--red-ink);">🗑️</button>
+              </div>
+              <label class="flex items-start gap-2 text-[11px] leading-snug" style="color:var(--text-3);">
+                <input type="checkbox" id="prod-imagen-fondoblanco" checked class="mt-0.5">
+                <span>Fondo blanco automático (mejor resultado con la foto sobre una superficie clara)</span>
+              </label>
+              <input type="file" id="prod-imagen-input" accept="image/*" class="hidden" onchange="previsualizarImagenProducto(this)">
+            </div>
+          </div>
+        </div>
         <div class="grid grid-cols-2 gap-4">
           <div><label class="block text-xs font-bold uppercase tracking-wide mb-2" style="color:var(--text-2);">Categoría</label>
             <select id="prod-categoria" class="input-dark w-full px-4 py-3 rounded-xl text-sm">
@@ -339,6 +360,7 @@
 
   <script src="js/supabaseClient.js"></script>
   <script src="js/guard.js"></script>
+  <script src="js/imagen-producto.js"></script>
   <script src="js/admin.js"></script>
 </body>
 </html>
