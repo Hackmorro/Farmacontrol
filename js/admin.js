@@ -8,6 +8,12 @@ let usuarios = [];
 let stockIdActual = null;
 let miPerfil = null;
 
+// ---- Foto de producto ----
+const BUCKET_FOTOS_PRODUCTO = 'productos-fotos';
+let prodImagenBlob = null;      // Blob ya procesado, listo para subir (null = sin cambios)
+let prodImagenUrlActual = '';   // URL que ya estaba guardada (al editar)
+let prodImagenEliminar = false; // true = el usuario quitó la foto existente
+
 function stockTotal(p) { return (p.lotes || []).reduce((s, l) => s + l.cantidad, 0); }
 
 // Llena todos los <select class="select-lote-letra"> con A-Z
@@ -114,7 +120,7 @@ function renderProductos() {
     div.innerHTML = `
       <div class="flex items-start justify-between mb-4">
         <div class="flex items-center gap-3">
-          <div class="w-11 h-11 rounded-xl flex items-center justify-center" style="background:${bajo ? 'rgba(251,113,133,.12)' : 'rgba(167,139,250,.12)'};"><span class="text-lg">${bajo ? '⚠️' : '💊'}</span></div>
+          <div class="w-11 h-11 rounded-xl flex items-center justify-center overflow-hidden" style="background:${p.imagen_url ? '#fff' : (bajo ? 'rgba(251,113,133,.12)' : 'rgba(167,139,250,.12)')};">${p.imagen_url ? `<img src="${p.imagen_url}" class="w-full h-full object-contain" loading="lazy">` : `<span class="text-lg">${bajo ? '⚠️' : '💊'}</span>`}</div>
           <div><h3 class="font-bold text-sm leading-tight" style="color:var(--text-1);">${escapeHtml(p.nombre)}</h3><p class="text-xs mt-0.5" style="color:var(--text-3);">${escapeHtml(p.categoria)}</p></div>
         </div>
         <span class="px-2.5 py-1 rounded-lg text-[10px] font-bold" style="${bajo ? 'background:rgba(251,113,133,.12); color:var(--red-ink);' : 'background:rgba(16,232,166,.12); color:var(--emerald-ink);'}">${bajo ? 'BAJO' : 'OK'}</span>
@@ -199,6 +205,7 @@ function abrirModalProducto() {
   document.getElementById('modal-producto-titulo').textContent = 'Nuevo Producto';
   document.getElementById('modal-producto-icono').textContent = '➕';
   document.getElementById('lote-inicial-wrap').classList.remove('hidden');
+  resetImagenProductoUI();
   abrirModal('modal-producto');
 }
 
@@ -217,7 +224,91 @@ function abrirEditar(id) {
   document.getElementById('modal-producto-titulo').textContent = 'Editar Producto';
   document.getElementById('modal-producto-icono').textContent = '✏️';
   document.getElementById('lote-inicial-wrap').classList.add('hidden');
+  resetImagenProductoUI();
+  if (p.imagen_url) {
+    prodImagenUrlActual = p.imagen_url;
+    const preview = document.getElementById('prod-imagen-preview');
+    preview.src = p.imagen_url;
+    preview.classList.remove('hidden');
+    document.getElementById('prod-imagen-placeholder').classList.add('hidden');
+    document.getElementById('prod-imagen-quitar').classList.remove('hidden');
+    document.getElementById('prod-imagen-btn-txt').textContent = 'Cambiar foto';
+  }
   abrirModal('modal-producto');
+}
+
+// ---------------------------------------------------------------------------
+// FOTO DE PRODUCTO
+// ---------------------------------------------------------------------------
+function resetImagenProductoUI() {
+  prodImagenBlob = null; prodImagenUrlActual = ''; prodImagenEliminar = false;
+  const preview = document.getElementById('prod-imagen-preview');
+  preview.src = ''; preview.classList.add('hidden');
+  document.getElementById('prod-imagen-placeholder').classList.remove('hidden');
+  document.getElementById('prod-imagen-quitar').classList.add('hidden');
+  document.getElementById('prod-imagen-fondoblanco').checked = true;
+  document.getElementById('prod-imagen-btn-txt').textContent = 'Adjuntar foto';
+}
+
+async function previsualizarImagenProducto(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const loader = document.getElementById('prod-imagen-loader');
+  const preview = document.getElementById('prod-imagen-preview');
+  const placeholder = document.getElementById('prod-imagen-placeholder');
+  loader.classList.remove('hidden');
+  placeholder.classList.add('hidden');
+  preview.classList.add('hidden');
+  try {
+    const fondoBlanco = document.getElementById('prod-imagen-fondoblanco').checked;
+    const blob = await procesarFotoProducto(file, { fondoBlanco });
+    prodImagenBlob = blob;
+    prodImagenEliminar = false;
+    preview.src = URL.createObjectURL(blob);
+    preview.classList.remove('hidden');
+    document.getElementById('prod-imagen-quitar').classList.remove('hidden');
+    document.getElementById('prod-imagen-btn-txt').textContent = 'Cambiar foto';
+  } catch (e) {
+    console.error(e);
+    alert('No se pudo procesar esa foto. Probá con otra.');
+    placeholder.classList.toggle('hidden', preview.src && !preview.classList.contains('hidden'));
+  } finally {
+    loader.classList.add('hidden');
+    input.value = '';
+  }
+}
+
+function quitarImagenProducto() {
+  prodImagenBlob = null;
+  prodImagenEliminar = true;
+  document.getElementById('prod-imagen-preview').classList.add('hidden');
+  document.getElementById('prod-imagen-placeholder').classList.remove('hidden');
+  document.getElementById('prod-imagen-quitar').classList.add('hidden');
+  document.getElementById('prod-imagen-btn-txt').textContent = 'Adjuntar foto';
+}
+
+function rutaDesdeUrlPublicaFoto(url) {
+  const marcador = `/object/public/${BUCKET_FOTOS_PRODUCTO}/`;
+  const i = url.indexOf(marcador);
+  return i === -1 ? null : url.slice(i + marcador.length);
+}
+
+async function borrarImagenProductoStorage(url) {
+  const ruta = rutaDesdeUrlPublicaFoto(url);
+  if (!ruta) return;
+  try { await supabaseClient.storage.from(BUCKET_FOTOS_PRODUCTO).remove([ruta]); } catch (e) { console.error(e); }
+}
+
+async function subirImagenProducto(blob, urlAnterior) {
+  try {
+    const nombreArchivo = `producto-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`;
+    const { error } = await supabaseClient.storage.from(BUCKET_FOTOS_PRODUCTO)
+      .upload(nombreArchivo, blob, { contentType: 'image/jpeg', upsert: false });
+    if (error) { console.error(error); return null; }
+    const { data } = supabaseClient.storage.from(BUCKET_FOTOS_PRODUCTO).getPublicUrl(nombreArchivo);
+    if (urlAnterior) borrarImagenProductoStorage(urlAnterior); // limpieza en segundo plano
+    return data.publicUrl;
+  } catch (e) { console.error(e); return null; }
 }
 
 async function guardarProducto() {
@@ -234,6 +325,15 @@ async function guardarProducto() {
     proveedor: document.getElementById('prod-proveedor').value.trim(),
     fecha_laboracion: document.getElementById('prod-laboracion').value || null
   };
+
+  if (prodImagenBlob) {
+    const url = await subirImagenProducto(prodImagenBlob, prodImagenUrlActual);
+    if (url === null) alert('No se pudo subir la foto — se guardará el resto de los datos sin la foto.');
+    else data.imagen_url = url;
+  } else if (prodImagenEliminar) {
+    if (prodImagenUrlActual) borrarImagenProductoStorage(prodImagenUrlActual);
+    data.imagen_url = null;
+  }
 
   if (id) {
     await supabaseClient.from('productos').update(data).eq('id', id);
@@ -257,7 +357,9 @@ async function guardarProducto() {
 
 async function eliminarProducto(id, nombre) {
   if (!confirm(`¿Eliminar "${nombre}" del inventario?\nEsta acción no se puede deshacer.`)) return;
+  const p = productos.find(x => x.id === id);
   await supabaseClient.from('productos').delete().eq('id', id);
+  if (p && p.imagen_url) borrarImagenProductoStorage(p.imagen_url);
   await cargarTodo();
 }
 

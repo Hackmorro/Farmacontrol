@@ -32,6 +32,7 @@ function renderProductos() {
   cont.innerHTML = productos.map(p => `
     <div class="card-producto p-5 rounded-2xl flex flex-col justify-between producto" data-categoria="${p.categoria}" data-id="${p.id}" data-nombre="${p.nombre.toLowerCase()}" data-barra="${(p.codigo_barra || '').toLowerCase()}">
       <div>
+        ${p.imagen_url ? `<div class="w-full aspect-square rounded-xl overflow-hidden mb-3" style="background:#fff;"><img src="${p.imagen_url}" class="w-full h-full object-contain" loading="lazy"></div>` : ''}
         <div class="flex justify-between items-start mb-3">
           <span class="text-lg font-bold px-3 py-2 rounded-xl" style="background:rgba(16,232,166,.1); color:var(--emerald-ink);">${p.categoria.slice(0, 2)}</span>
           <span class="text-xs px-2.5 py-1.5 rounded-lg font-semibold" style="background:var(--tint-2); color:var(--text-2);">Stock: <span class="stock-val">${stockTotal(p)}</span></span>
