@@ -118,12 +118,12 @@ function renderProductos() {
     div.className = 'producto-card rounded-2xl p-3 sm:p-5';
     div.dataset.id = p.id; div.dataset.nombre = p.nombre.toLowerCase(); div.dataset.barra = (p.codigo_barra || '').toLowerCase();
     div.innerHTML = `
-      <div class="flex items-start justify-between mb-4">
-        <div class="flex items-center gap-3">
-          <div class="w-11 h-11 rounded-xl flex items-center justify-center overflow-hidden" style="background:${p.imagen_url ? '#fff' : (bajo ? 'rgba(251,113,133,.12)' : 'rgba(167,139,250,.12)')};">${p.imagen_url ? `<img src="${p.imagen_url}" class="w-full h-full object-contain" loading="lazy">` : `<span class="text-lg">${bajo ? '⚠️' : '💊'}</span>`}</div>
-          <div><h3 class="font-bold text-sm leading-tight" style="color:var(--text-1);">${escapeHtml(p.nombre)}</h3><p class="text-xs mt-0.5" style="color:var(--text-3);">${escapeHtml(p.categoria)}</p></div>
+      <div class="flex items-start justify-between gap-2 mb-4">
+        <div class="flex items-center gap-3 min-w-0 flex-1">
+          <div class="w-11 h-11 rounded-xl flex items-center justify-center overflow-hidden shrink-0" style="background:${p.imagen_url ? '#fff' : (bajo ? 'rgba(251,113,133,.12)' : 'rgba(167,139,250,.12)')};">${p.imagen_url ? `<img src="${p.imagen_url}" class="w-full h-full object-contain" loading="lazy">` : `<span class="text-lg">${bajo ? '⚠️' : '💊'}</span>`}</div>
+          <div class="min-w-0"><h3 class="font-bold text-sm leading-tight truncate" title="${escapeHtml(p.nombre)}" style="color:var(--text-1);">${escapeHtml(p.nombre)}</h3><p class="text-xs mt-0.5 truncate" style="color:var(--text-3);">${escapeHtml(p.categoria)}</p></div>
         </div>
-        <span class="px-2.5 py-1 rounded-lg text-[10px] font-bold" style="${bajo ? 'background:rgba(251,113,133,.12); color:var(--red-ink);' : 'background:rgba(16,232,166,.12); color:var(--emerald-ink);'}">${bajo ? 'BAJO' : 'OK'}</span>
+        <span class="px-2.5 py-1 rounded-lg text-[10px] font-bold shrink-0 whitespace-nowrap" style="${bajo ? 'background:rgba(251,113,133,.12); color:var(--red-ink);' : 'background:rgba(16,232,166,.12); color:var(--emerald-ink);'}">${bajo ? 'BAJO' : 'OK'}</span>
       </div>
       <div class="flex items-end justify-between mb-4">
         <div><p class="text-[10px] uppercase font-bold" style="color:var(--text-3);">Precio</p><p class="font-display text-2xl font-bold" style="color:var(--text-1);">$${Number(p.precio).toFixed(2)}</p></div>

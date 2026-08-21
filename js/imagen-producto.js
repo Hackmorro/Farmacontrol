@@ -76,6 +76,21 @@ function recortarPorAlfa(ctx, width, height) {
   return { x: minX, y: minY, w: (maxX - minX + 1), h: (maxY - minY + 1) };
 }
 
+// El recorte con IA deja un degradado de transparencia en el borde del
+// producto (para que el recorte se vea suave en cualquier fondo). Al
+// componer eso sobre blanco, ese degradado se ve como una sombra gris
+// alrededor del producto. Acá se "endurece" el canal alfa (todo o nada)
+// para que el borde quede limpio y sin sombra — y de paso, al no incluir
+// ese halo de transparencia parcial en el recorte, el tamaño del producto
+// dentro del lienzo queda consistente entre fotos distintas.
+function endurecerAlfa(imageData, umbral = 140) {
+  const { data } = imageData;
+  for (let i = 3; i < data.length; i += 4) {
+    data[i] = data[i] >= umbral ? 255 : 0;
+  }
+  return imageData;
+}
+
 async function quitarFondoConIA(file) {
   const removeBackground = await cargarRemovedorIA();
   const blobSinFondo = await conTimeout(removeBackground(file), IMGLY_TIMEOUT_MS);
@@ -116,6 +131,12 @@ async function procesarFotoProducto(file, opciones = {}) {
   cTrabajo.width = wOrig; cTrabajo.height = hOrig;
   const ctxTrabajo = cTrabajo.getContext('2d');
   ctxTrabajo.drawImage(imgFuente, 0, 0, wOrig, hOrig);
+
+  if (recorteAlfaDisponible) {
+    const imageData = ctxTrabajo.getImageData(0, 0, wOrig, hOrig);
+    endurecerAlfa(imageData);
+    ctxTrabajo.putImageData(imageData, 0, 0);
+  }
 
   let recorte = { x: 0, y: 0, w: wOrig, h: hOrig };
   if (recorteAlfaDisponible) {
