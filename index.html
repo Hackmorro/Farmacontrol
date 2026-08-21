@@ -10,8 +10,6 @@
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/theme.css">
 <style>
-  .scanline{ position:absolute; inset:0; background:linear-gradient(180deg, transparent 0%, rgba(16,232,166,.06) 50%, transparent 100%); background-size:100% 6px; animation:scan 9s linear infinite; }
-  @keyframes scan{ 0%{background-position:0 0;} 100%{background-position:0 600px;} }
   .pulse-dot{ animation:pulse 1.6s ease-in-out infinite; }
   @keyframes pulse{ 0%,100%{opacity:1;} 50%{opacity:.35;} }
 </style>
@@ -151,17 +149,20 @@
     </div>
   </div>
 
-  <div class="hidden md:block w-1/2 relative overflow-hidden" style="background-image:url('assets/login-bg.png'); background-size:cover; background-position:center;">
-    <div class="absolute inset-0 z-10" style="background:linear-gradient(135deg, rgba(6,11,20,.97) 0%, rgba(5,25,22,.9) 45%, rgba(6,25,28,.75) 100%);"></div>
-    <div class="scanline z-10"></div>
-    <div class="absolute top-16 left-16 right-16 z-20">
-      <span class="pulse-dot w-2 h-2 rounded-full inline-block mr-2" style="background:var(--emerald);"></span>
-      <span class="text-xs font-bold tracking-widest uppercase" style="color:var(--emerald-ink);">Sistema en línea</span>
-    </div>
-    <div class="absolute bottom-16 left-16 right-16 z-20 text-white">
-      <span class="px-3.5 py-1.5 text-xs font-extrabold uppercase tracking-widest rounded-full glass" style="color:var(--emerald-ink);">FarmaControl · Web</span>
-      <p class="font-display text-2xl font-bold mt-5 leading-snug" style="color:var(--text-1);">Control total de tu farmacia,<br>en tiempo real.</p>
-      <p class="text-sm mt-2" style="color:var(--text-2);">Inventario, ventas y facturación desde un solo panel.</p>
+  <div class="hidden md:flex w-1/2 relative overflow-hidden items-center justify-center p-16" style="background:var(--bg-deep);">
+    <div class="absolute w-96 h-96 rounded-full opacity-40" style="background:radial-gradient(circle, rgba(0,89,187,.25) 0%, transparent 70%); top:-6rem; right:-6rem; filter:blur(60px);"></div>
+    <div class="absolute w-80 h-80 rounded-full opacity-40" style="background:radial-gradient(circle, rgba(0,108,75,.2) 0%, transparent 70%); bottom:-4rem; left:-4rem; filter:blur(60px);"></div>
+    <div class="relative z-10 max-w-sm">
+      <div class="w-20 h-20 rounded-3xl flex items-center justify-center mb-10" style="background:var(--bg-deep); box-shadow:8px 8px 16px var(--shadow-dark), -8px -8px 16px var(--shadow-light);">
+        <span class="text-4xl">💊</span>
+      </div>
+      <h1 class="font-display text-4xl font-bold mb-5 leading-tight" style="color:var(--text-1);">Control total<br>de tu farmacia,<br><span style="color:var(--emerald-ink);">en tiempo real.</span></h1>
+      <p class="text-base leading-relaxed" style="color:var(--text-2);">Inventario, ventas y facturación desde un solo panel. Sistema diseñado para alta precisión y rendimiento clínico.</p>
+      <div class="flex items-center gap-2 mt-10 px-4 py-2.5 rounded-full w-fit" style="background:var(--bg-deep); box-shadow:5px 5px 10px var(--shadow-dark), -5px -5px 10px var(--shadow-light);">
+        <span class="pulse-dot w-2 h-2 rounded-full inline-block" style="background:var(--cyan);"></span>
+        <span class="text-xs font-bold tracking-widest uppercase" style="color:var(--cyan-ink);">Sistema en línea</span>
+      </div>
+      <div class="absolute w-28 h-28 rounded-full opacity-60" style="bottom:-2rem; left:-2rem; background:var(--bg-deep); box-shadow:inset 4px 4px 8px var(--shadow-dark), inset -4px -4px 8px var(--shadow-light);"></div>
     </div>
   </div>
 
