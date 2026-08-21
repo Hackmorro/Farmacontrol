@@ -115,7 +115,7 @@ function renderProductos() {
   productos.forEach(p => {
     const bajo = stockTotal(p) <= p.minimo;
     const div = document.createElement('div');
-    div.className = 'producto-card rounded-2xl p-3 sm:p-5';
+    div.className = 'producto-card rounded-2xl p-5';
     div.dataset.id = p.id; div.dataset.nombre = p.nombre.toLowerCase(); div.dataset.barra = (p.codigo_barra || '').toLowerCase();
     div.innerHTML = `
       <div class="flex items-start justify-between gap-2 mb-4">
