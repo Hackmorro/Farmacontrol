@@ -44,7 +44,7 @@ function renderProductos() {
       </div>
       <div class="mt-5 pt-4 space-y-3" style="border-top:1px solid var(--border-soft);">
         <span class="text-lg font-extrabold block" style="color:var(--emerald-ink);">$${Number(p.precio).toFixed(2)}</span>
-        <button onclick="agregar(${p.id})" class="btn-add w-full py-2.5 text-slate-950 rounded-xl text-xs font-bold transition">+ Añadir</button>
+        <button onclick="agregar(${p.id})" class="btn-add w-full py-2.5 rounded-xl text-xs font-bold transition">+ Añadir</button>
       </div>
     </div>`).join('');
 

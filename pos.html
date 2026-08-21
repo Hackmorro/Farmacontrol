@@ -13,17 +13,70 @@
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/theme.css">
 <style>
-  .card-producto{ background:var(--bg-elev); border:1px solid var(--border-soft); transition:all .2s ease; }
-  .card-producto:hover{ border-color:rgba(16,232,166,.45); transform:translateY(-3px); box-shadow:0 14px 30px -10px rgba(16,232,166,.25); }
-  .btn-add{ background:linear-gradient(135deg, var(--emerald), var(--emerald-dim)); box-shadow:0 6px 18px -4px rgba(16,232,166,.4); }
-  .btn-add:hover{ filter:brightness(1.08); }
-  .btn-checkout{ background:linear-gradient(135deg, var(--emerald), var(--cyan)); box-shadow:0 10px 28px -6px rgba(16,232,166,.4); }
-  .btn-checkout:disabled{ background:var(--disabled-bg); box-shadow:none; color:var(--text-3); cursor:not-allowed; }
-  .cat-btn.active{ background:rgba(16,232,166,.12); color:var(--emerald-ink); border-color:rgba(16,232,166,.35); }
-  .cat-btn{ color:var(--text-2); border:1px solid transparent; transition:all .15s ease; }
-  .cat-btn:hover:not(.active){ background:var(--bg-elev-hover); color:var(--text-1); }
-  .metodo-btn{ border:1px solid var(--border-soft); color:var(--text-2); background:var(--tint-1); }
-  .metodo-btn.active{ border-color:rgba(16,232,166,.5); background:rgba(16,232,166,.08); color:var(--emerald-ink); }
+  .card-producto{ transition:all .2s ease; }
+  .btn-add{
+    background:var(--bg-deep);
+    color:var(--emerald-ink);
+    box-shadow:4px 4px 8px var(--shadow-dark), -4px -4px 8px var(--shadow-light);
+    border:none;
+    border-radius:12px;
+    transition:all .2s ease;
+    cursor:pointer;
+    outline:none;
+  }
+  .btn-add:hover{ box-shadow:2px 2px 4px var(--shadow-dark), -2px -2px 4px var(--shadow-light); }
+  .btn-add:active{ box-shadow:inset 3px 3px 6px var(--shadow-dark), inset -3px -3px 6px var(--shadow-light); }
+  
+  .btn-checkout{
+    background:linear-gradient(135deg, var(--emerald), var(--emerald-dim));
+    box-shadow:6px 6px 14px var(--shadow-accent), -6px -6px 14px var(--shadow-light);
+    color:#ffffff !important;
+    border:none;
+    transition:all .2s ease;
+    cursor:pointer;
+    outline:none;
+  }
+  .btn-checkout:hover{ box-shadow:8px 8px 18px var(--shadow-accent-hover), -6px -6px 14px var(--shadow-light); transform:translateY(-1px); }
+  .btn-checkout:active{ box-shadow:inset 4px 4px 8px var(--shadow-accent-active), inset -4px -4px 8px var(--shadow-accent-active-light); transform:scale(.98); }
+  .btn-checkout:disabled{ background:var(--disabled-bg); box-shadow:none; color:var(--text-3); cursor:not-allowed; transform:none; }
+
+  .cat-btn{
+    color:var(--text-2);
+    background:var(--bg-deep);
+    border:none;
+    border-radius:12px;
+    box-shadow:4px 4px 8px var(--shadow-dark), -4px -4px 8px var(--shadow-light);
+    transition:all .2s ease;
+    cursor:pointer;
+    outline:none;
+  }
+  .cat-btn.active{
+    background:var(--bg-deep);
+    color:var(--emerald-ink);
+    font-weight:700;
+    box-shadow:inset 3px 3px 6px var(--shadow-dark), inset -3px -3px 6px var(--shadow-light);
+  }
+  .cat-btn:hover:not(.active){
+    box-shadow:6px 6px 12px var(--shadow-dark), -6px -6px 12px var(--shadow-light);
+    color:var(--text-1);
+  }
+
+  .metodo-btn{
+    border:none;
+    border-radius:12px;
+    color:var(--text-2);
+    background:var(--bg-deep);
+    box-shadow:4px 4px 8px var(--shadow-dark), -4px -4px 8px var(--shadow-light);
+    transition:all .2s ease;
+    cursor:pointer;
+    outline:none;
+  }
+  .metodo-btn.active{
+    background:var(--bg-deep);
+    color:var(--emerald-ink);
+    font-weight:700;
+    box-shadow:inset 3px 3px 6px var(--shadow-dark), inset -3px -3px 6px var(--shadow-light);
+  }
   .barcode-mini{ display:block; width:100%; height:20px; }
 </style>
 </head>
@@ -84,7 +137,7 @@
         <div class="flex justify-between text-sm" style="color:var(--text-2);"><span>Subtotal:</span><span id="subtotal">$0.00</span></div>
         <div class="flex justify-between text-sm" style="color:var(--text-2);"><span>IVA (16%):</span><span id="iva">$0.00</span></div>
         <div class="flex justify-between text-xl font-black pt-3" style="color:var(--text-1); border-top:1px dashed var(--border-soft);"><span>Total:</span><span id="total">$0.00</span></div>
-        <button onclick="abrirCheckout()" id="checkout-btn" disabled class="btn-checkout w-full mt-4 py-4 text-slate-950 font-bold rounded-xl transition">Realizar Compra 🚀</button>
+        <button onclick="abrirCheckout()" id="checkout-btn" disabled class="btn-checkout w-full mt-4 py-4 font-bold rounded-xl transition">Realizar Compra 🚀</button>
       </div>
     </aside>
   </div>
@@ -92,11 +145,11 @@
   <!-- Barra flotante del carrito — solo en móvil -->
   <div id="carrito-flotante" class="md:hidden hidden fixed bottom-4 left-4 right-4 z-30">
     <button onclick="abrirCarritoMobil()" class="btn-checkout w-full py-4 rounded-2xl flex items-center justify-between px-5 shadow-2xl">
-      <span class="flex items-center gap-2.5 text-slate-950 font-bold text-sm">
+      <span class="flex items-center gap-2.5 font-bold text-sm">
         <span class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-black" style="background:rgba(15,23,42,.18);" id="carrito-flotante-count">0</span>
         Ver carrito
       </span>
-      <span class="text-slate-950 font-black text-base" id="carrito-flotante-total">$0.00</span>
+      <span class="font-black text-base" id="carrito-flotante-total">$0.00</span>
     </button>
   </div>
 

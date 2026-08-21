@@ -143,13 +143,13 @@ function renderProductos() {
       </div>
       <div class="space-y-2">
         <div class="flex gap-2">
-          <button onclick="abrirStockModal(${p.id})" class="flex-1 py-2.5 text-xs font-bold rounded-xl transition" style="background:rgba(16,232,166,.1); color:var(--emerald-ink);">📥 Carga</button>
-          <button onclick="abrirDescargoModal(${p.id})" class="flex-1 py-2.5 text-xs font-bold rounded-xl transition" style="background:rgba(251,113,133,.1); color:var(--red-ink);">📤 Descargo</button>
+          <button onclick="abrirStockModal(${p.id})" class="btn-soft flex-1 py-2.5 text-xs font-bold transition" style="color:var(--emerald-ink);">📥 Carga</button>
+          <button onclick="abrirDescargoModal(${p.id})" class="btn-soft flex-1 py-2.5 text-xs font-bold transition" style="color:var(--red-ink);">📤 Descargo</button>
         </div>
         <div class="flex gap-2">
-          <button onclick="abrirEditar(${p.id})" class="flex-1 py-2.5 text-xs font-bold rounded-xl transition" style="background:rgba(251,191,36,.1); color:var(--amber-ink);">✏️ Editar</button>
-          ${p.codigo_barra ? `<button onclick="abrirBarcodeModal(${p.id})" class="py-2.5 px-3 text-xs font-bold rounded-xl transition" style="background:var(--tint-3); color:var(--text-2);">📊</button>` : ''}
-          <button onclick="eliminarProducto(${p.id}, '${escapeHtml(p.nombre)}')" class="py-2.5 px-3 text-xs font-bold rounded-xl transition" style="background:rgba(251,113,133,.1); color:var(--red-ink);">🗑️</button>
+          <button onclick="abrirEditar(${p.id})" class="btn-soft flex-1 py-2.5 text-xs font-bold transition" style="color:var(--amber-ink);">✏️ Editar</button>
+          ${p.codigo_barra ? `<button onclick="abrirBarcodeModal(${p.id})" class="btn-soft py-2.5 px-3 text-xs font-bold transition" style="color:var(--text-2);">📊</button>` : ''}
+          <button onclick="eliminarProducto(${p.id}, '${escapeHtml(p.nombre)}')" class="btn-soft py-2.5 px-3 text-xs font-bold transition" style="color:var(--red-ink);">🗑️</button>
         </div>
       </div>`;
     grid.appendChild(div);

@@ -29,121 +29,120 @@
         </button>
       </div>
 
-      <!-- ===================== LOGIN ===================== -->
-      <div id="vista-login">
-        <div class="flex border-b mb-8" style="border-color:var(--border-soft);">
-          <button onclick="mostrarVista('login')" class="w-1/2 pb-4 text-sm font-bold border-b-2 transition" style="border-color:var(--emerald); color:var(--emerald-ink);">Iniciar Sesión</button>
-          <button onclick="mostrarVista('registro')" class="w-1/2 pb-4 text-sm font-bold transition" style="color:var(--text-2);">Registrarse</button>
+      <div class="card p-7 md:p-8">
+        <div id="tabs-acceso" class="flex gap-3.5 mb-6">
+          <button onclick="mostrarVista('login')" id="tab-login" class="tab-btn active w-1/2 py-2.5 rounded-xl text-sm font-bold">Iniciar Sesión</button>
+          <button onclick="mostrarVista('registro')" id="tab-registro" class="tab-btn w-1/2 py-2.5 rounded-xl text-sm font-bold">Registrarse</button>
         </div>
-        <h2 class="font-display text-2xl font-bold tracking-tight mb-2" style="color:var(--text-1);">¡Hola de nuevo!</h2>
-        <p class="text-sm mb-7" style="color:var(--text-2);">Gestiona inventarios, ventas y cajas registradoras en tiempo real.</p>
 
-        <div id="login-msg" class="hidden p-4 mb-5 text-sm rounded-2xl items-center gap-2"></div>
+        <!-- ===================== LOGIN ===================== -->
+        <div id="vista-login">
+          <h2 class="font-display text-2xl font-bold tracking-tight mb-2" style="color:var(--text-1);">¡Hola de nuevo!</h2>
+          <p class="text-sm mb-6" style="color:var(--text-2);">Gestiona inventarios, ventas y cajas registradoras en tiempo real.</p>
 
-        <form id="form-login" class="space-y-5" onsubmit="return false;">
-          <div>
-            <label class="block text-xs font-bold uppercase tracking-wider mb-2" style="color:var(--text-2);">Correo electrónico</label>
-            <input type="email" id="login-email" required autocomplete="off" placeholder="tucorreo@ejemplo.com" class="input-dark w-full px-4 py-3.5 rounded-2xl text-sm">
-          </div>
-          <div>
-            <div class="flex justify-between items-center mb-2">
-              <label class="block text-xs font-bold uppercase tracking-wider" style="color:var(--text-2);">Contraseña</label>
-              <button type="button" onclick="mostrarVista('recuperar')" class="text-xs font-semibold" style="color:var(--emerald-ink);">¿Olvidaste tu contraseña?</button>
+          <div id="login-msg" class="hidden p-4 mb-5 text-sm rounded-2xl items-center gap-2"></div>
+
+          <form id="form-login" class="space-y-5" onsubmit="return false;">
+            <div>
+              <label class="block text-xs font-bold uppercase tracking-wider mb-2" style="color:var(--text-2);">Correo electrónico</label>
+              <input type="email" id="login-email" required autocomplete="off" placeholder="tucorreo@ejemplo.com" class="input-dark w-full px-4 py-3 rounded-2xl text-sm">
             </div>
-            <input type="password" id="login-password" required autocomplete="current-password" placeholder="••••••••" class="input-dark w-full px-4 py-3.5 rounded-2xl text-sm">
-          </div>
-          <button type="button" onclick="iniciarSesion()" id="btn-login" class="btn-primary w-full py-4 text-white font-bold rounded-2xl transition-all text-sm mt-2 flex items-center justify-center gap-2">Ingresar al Sistema</button>
-        </form>
-      </div>
-
-      <!-- ===================== REGISTRO ===================== -->
-      <div id="vista-registro" class="hidden">
-        <div class="flex border-b mb-8" style="border-color:var(--border-soft);">
-          <button onclick="mostrarVista('login')" class="w-1/2 pb-4 text-sm font-bold transition" style="color:var(--text-2);">Iniciar Sesión</button>
-          <button onclick="mostrarVista('registro')" class="w-1/2 pb-4 text-sm font-bold border-b-2 transition" style="border-color:var(--emerald); color:var(--emerald-ink);">Registrarse</button>
+            <div>
+              <div class="flex justify-between items-center mb-2">
+                <label class="block text-xs font-bold uppercase tracking-wider" style="color:var(--text-2);">Contraseña</label>
+                <button type="button" onclick="mostrarVista('recuperar')" class="text-xs font-semibold" style="color:var(--emerald-ink);">¿Olvidaste tu contraseña?</button>
+              </div>
+              <input type="password" id="login-password" required autocomplete="current-password" placeholder="••••••••" class="input-dark w-full px-4 py-3 rounded-2xl text-sm">
+            </div>
+            <button type="button" onclick="iniciarSesion()" id="btn-login" class="btn-primary w-full py-3.5 text-white font-bold rounded-2xl transition-all text-sm mt-2 flex items-center justify-center gap-2">Ingresar al Sistema</button>
+          </form>
         </div>
-        <h2 class="font-display text-2xl font-bold tracking-tight mb-2" style="color:var(--text-1);">Únete a FarmaControl</h2>
-        <p class="text-sm mb-6" style="color:var(--text-2);">Completa tus datos. Un administrador te asignará permisos luego de crear tu cuenta.</p>
 
-        <div id="registro-msg" class="hidden p-4 mb-5 text-sm rounded-2xl items-center gap-2"></div>
+        <!-- ===================== REGISTRO ===================== -->
+        <div id="vista-registro" class="hidden">
+          <h2 class="font-display text-2xl font-bold tracking-tight mb-2" style="color:var(--text-1);">Únete a FarmaControl</h2>
+          <p class="text-sm mb-5" style="color:var(--text-2);">Completa tus datos. Un administrador te asignará permisos luego de crear tu cuenta.</p>
 
-        <form id="form-registro" class="space-y-4" onsubmit="return false;">
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="block text-xs font-bold uppercase tracking-wider mb-2" style="color:var(--text-2);">Nombre</label>
-              <input type="text" id="reg-nombre" required class="input-dark w-full px-4 py-3 rounded-2xl text-sm">
+          <div id="registro-msg" class="hidden p-4 mb-5 text-sm rounded-2xl items-center gap-2"></div>
+
+          <form id="form-registro" class="space-y-4" onsubmit="return false;">
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-bold uppercase tracking-wider mb-2" style="color:var(--text-2);">Nombre</label>
+                <input type="text" id="reg-nombre" required class="input-dark w-full px-4 py-3 rounded-2xl text-sm">
+              </div>
+              <div>
+                <label class="block text-xs font-bold uppercase tracking-wider mb-2" style="color:var(--text-2);">Apellido</label>
+                <input type="text" id="reg-apellido" required class="input-dark w-full px-4 py-3 rounded-2xl text-sm">
+              </div>
             </div>
-            <div>
-              <label class="block text-xs font-bold uppercase tracking-wider mb-2" style="color:var(--text-2);">Apellido</label>
-              <input type="text" id="reg-apellido" required class="input-dark w-full px-4 py-3 rounded-2xl text-sm">
-            </div>
-          </div>
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="block text-xs font-bold uppercase tracking-wider mb-2" style="color:var(--text-2);">Cédula</label>
-              <div class="flex gap-2">
-                <select id="reg-tipo-cedula" class="input-dark px-3 py-3 rounded-2xl text-sm">
-                  <option value="V">V-</option>
-                  <option value="E">E-</option>
-                </select>
-                <input type="text" id="reg-cedula" required inputmode="numeric" maxlength="8" placeholder="12345678" oninput="this.value=this.value.replace(/\D/g,'').slice(0,8)" class="input-dark w-full px-4 py-3 rounded-2xl text-sm">
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-bold uppercase tracking-wider mb-2" style="color:var(--text-2);">Cédula</label>
+                <div class="flex gap-2">
+                  <select id="reg-tipo-cedula" class="input-dark px-3 py-3 rounded-2xl text-sm">
+                    <option value="V">V-</option>
+                    <option value="E">E-</option>
+                  </select>
+                  <input type="text" id="reg-cedula" required inputmode="numeric" maxlength="8" placeholder="12345678" oninput="this.value=this.value.replace(/\D/g,'').slice(0,8)" class="input-dark w-full px-4 py-3 rounded-2xl text-sm">
+                </div>
+              </div>
+              <div>
+                <label class="block text-xs font-bold uppercase tracking-wider mb-2" style="color:var(--text-2);">Teléfono</label>
+                <div class="flex gap-2">
+                  <span class="input-dark px-3 py-3 rounded-2xl text-sm" style="color:var(--text-2);">+58</span>
+                  <input type="tel" id="reg-telefono" inputmode="numeric" maxlength="10" placeholder="4121234567" oninput="this.value=this.value.replace(/\D/g,'').slice(0,10)" class="input-dark w-full px-4 py-3 rounded-2xl text-sm">
+                </div>
               </div>
             </div>
             <div>
-              <label class="block text-xs font-bold uppercase tracking-wider mb-2" style="color:var(--text-2);">Teléfono</label>
-              <div class="flex gap-2">
-                <span class="input-dark px-3 py-3 rounded-2xl text-sm" style="color:var(--text-2);">+58</span>
-                <input type="tel" id="reg-telefono" inputmode="numeric" maxlength="10" placeholder="4121234567" oninput="this.value=this.value.replace(/\D/g,'').slice(0,10)" class="input-dark w-full px-4 py-3 rounded-2xl text-sm">
-              </div>
+              <label class="block text-xs font-bold uppercase tracking-wider mb-2" style="color:var(--text-2);">Fecha de nacimiento</label>
+              <input type="date" id="reg-nacimiento" required class="input-dark w-full px-4 py-3 rounded-2xl text-sm">
             </div>
-          </div>
-          <div>
-            <label class="block text-xs font-bold uppercase tracking-wider mb-2" style="color:var(--text-2);">Fecha de nacimiento</label>
-            <input type="date" id="reg-nacimiento" required class="input-dark w-full px-4 py-3 rounded-2xl text-sm">
-          </div>
-          <div>
-            <label class="block text-xs font-bold uppercase tracking-wider mb-2" style="color:var(--text-2);">Correo electrónico</label>
-            <input type="email" id="reg-email" required class="input-dark w-full px-4 py-3 rounded-2xl text-sm">
-          </div>
-          <div>
-            <label class="block text-xs font-bold uppercase tracking-wider mb-2" style="color:var(--text-2);">Contraseña</label>
-            <input type="password" id="reg-password" required minlength="6" placeholder="Mínimo 6 caracteres" class="input-dark w-full px-4 py-3 rounded-2xl text-sm">
-          </div>
-          <button type="button" onclick="registrarse()" id="btn-registro" class="btn-primary w-full py-4 text-white font-bold rounded-2xl transition-all text-sm mt-2 flex items-center justify-center gap-2">Crear Cuenta</button>
-        </form>
-      </div>
+            <div>
+              <label class="block text-xs font-bold uppercase tracking-wider mb-2" style="color:var(--text-2);">Correo electrónico</label>
+              <input type="email" id="reg-email" required class="input-dark w-full px-4 py-3 rounded-2xl text-sm">
+            </div>
+            <div>
+              <label class="block text-xs font-bold uppercase tracking-wider mb-2" style="color:var(--text-2);">Contraseña</label>
+              <input type="password" id="reg-password" required minlength="6" placeholder="Mínimo 6 caracteres" class="input-dark w-full px-4 py-3 rounded-2xl text-sm">
+            </div>
+            <button type="button" onclick="registrarse()" id="btn-registro" class="btn-primary w-full py-3.5 text-white font-bold rounded-2xl transition-all text-sm mt-2 flex items-center justify-center gap-2">Crear Cuenta</button>
+          </form>
+        </div>
 
-      <!-- ===================== RECUPERAR CONTRASEÑA ===================== -->
-      <div id="vista-recuperar" class="hidden">
-        <h2 class="font-display text-2xl font-bold tracking-tight mb-2" style="color:var(--text-1);">Recuperar contraseña</h2>
-        <p class="text-sm mb-7" style="color:var(--text-2);">Ingresa tu correo y te enviaremos un enlace para crear una nueva contraseña.</p>
-        <div id="recuperar-msg" class="hidden p-4 mb-5 text-sm rounded-2xl items-center gap-2"></div>
-        <form class="space-y-5" onsubmit="return false;">
-          <div>
-            <label class="block text-xs font-bold uppercase tracking-wider mb-2" style="color:var(--text-2);">Correo electrónico</label>
-            <input type="email" id="recuperar-email" required class="input-dark w-full px-4 py-3.5 rounded-2xl text-sm">
-          </div>
-          <button type="button" onclick="enviarRecuperacion()" id="btn-recuperar" class="btn-primary w-full py-4 text-white font-bold rounded-2xl transition-all text-sm mt-2 flex items-center justify-center gap-2">Enviar enlace de recuperación</button>
-          <button type="button" onclick="mostrarVista('login')" class="w-full py-2 text-sm font-semibold" style="color:var(--text-2);">← Volver a Iniciar sesión</button>
-        </form>
-      </div>
+        <!-- ===================== RECUPERAR CONTRASEÑA ===================== -->
+        <div id="vista-recuperar" class="hidden">
+          <h2 class="font-display text-2xl font-bold tracking-tight mb-2" style="color:var(--text-1);">Recuperar contraseña</h2>
+          <p class="text-sm mb-6" style="color:var(--text-2);">Ingresa tu correo y te enviaremos un enlace para crear una nueva contraseña.</p>
+          <div id="recuperar-msg" class="hidden p-4 mb-5 text-sm rounded-2xl items-center gap-2"></div>
+          <form class="space-y-5" onsubmit="return false;">
+            <div>
+              <label class="block text-xs font-bold uppercase tracking-wider mb-2" style="color:var(--text-2);">Correo electrónico</label>
+              <input type="email" id="recuperar-email" required class="input-dark w-full px-4 py-3 rounded-2xl text-sm">
+            </div>
+            <button type="button" onclick="enviarRecuperacion()" id="btn-recuperar" class="btn-primary w-full py-3.5 text-white font-bold rounded-2xl transition-all text-sm mt-2 flex items-center justify-center gap-2">Enviar enlace</button>
+            <button type="button" onclick="mostrarVista('login')" class="w-full py-2 text-sm font-semibold mt-2" style="color:var(--text-2);">← Volver a Iniciar sesión</button>
+          </form>
+        </div>
 
-      <!-- ===================== CREAR NUEVA CONTRASEÑA (llega por el enlace del correo) ===================== -->
-      <div id="vista-nueva-clave" class="hidden">
-        <h2 class="font-display text-2xl font-bold tracking-tight mb-2" style="color:var(--text-1);">Crear nueva contraseña</h2>
-        <p class="text-sm mb-7" style="color:var(--text-2);">Escribe tu nueva contraseña para tu cuenta.</p>
-        <div id="nueva-clave-msg" class="hidden p-4 mb-5 text-sm rounded-2xl items-center gap-2"></div>
-        <form class="space-y-5" onsubmit="return false;">
-          <div>
-            <label class="block text-xs font-bold uppercase tracking-wider mb-2" style="color:var(--text-2);">Nueva contraseña</label>
-            <input type="password" id="nueva-clave1" required minlength="6" class="input-dark w-full px-4 py-3.5 rounded-2xl text-sm">
-          </div>
-          <div>
-            <label class="block text-xs font-bold uppercase tracking-wider mb-2" style="color:var(--text-2);">Confirmar contraseña</label>
-            <input type="password" id="nueva-clave2" required minlength="6" class="input-dark w-full px-4 py-3.5 rounded-2xl text-sm">
-          </div>
-          <button type="button" onclick="actualizarContrasena()" id="btn-nueva-clave" class="btn-primary w-full py-4 text-white font-bold rounded-2xl transition-all text-sm mt-2 flex items-center justify-center gap-2">Actualizar contraseña</button>
-        </form>
+        <!-- ===================== CREAR NUEVA CONTRASEÑA (llega por el enlace del correo) ===================== -->
+        <div id="vista-nueva-clave" class="hidden">
+          <h2 class="font-display text-2xl font-bold tracking-tight mb-2" style="color:var(--text-1);">Crear nueva contraseña</h2>
+          <p class="text-sm mb-6" style="color:var(--text-2);">Escribe tu nueva contraseña para tu cuenta.</p>
+          <div id="nueva-clave-msg" class="hidden p-4 mb-5 text-sm rounded-2xl items-center gap-2"></div>
+          <form class="space-y-5" onsubmit="return false;">
+            <div>
+              <label class="block text-xs font-bold uppercase tracking-wider mb-2" style="color:var(--text-2);">Nueva contraseña</label>
+              <input type="password" id="nueva-clave1" required minlength="6" class="input-dark w-full px-4 py-3.5 rounded-2xl text-sm">
+            </div>
+            <div>
+              <label class="block text-xs font-bold uppercase tracking-wider mb-2" style="color:var(--text-2);">Confirmar contraseña</label>
+              <input type="password" id="nueva-clave2" required minlength="6" class="input-dark w-full px-4 py-3.5 rounded-2xl text-sm">
+            </div>
+            <button type="button" onclick="actualizarContrasena()" id="btn-nueva-clave" class="btn-primary w-full py-3.5 text-white font-bold rounded-2xl transition-all text-sm mt-2 flex items-center justify-center gap-2">Actualizar contraseña</button>
+          </form>
+        </div>
       </div>
 
     </div>

@@ -18,8 +18,31 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function mostrarVista(vista) {
   ['login', 'registro', 'recuperar', 'nueva-clave'].forEach(v => {
-    document.getElementById('vista-' + v).classList.toggle('hidden', v !== vista);
+    const el = document.getElementById('vista-' + v);
+    if (el) el.classList.toggle('hidden', v !== vista);
   });
+
+  // Manejo de pestañas neumórficas
+  const tabsAcceso = document.getElementById('tabs-acceso');
+  if (tabsAcceso) {
+    tabsAcceso.classList.toggle('hidden', vista !== 'login' && vista !== 'registro');
+  }
+
+  const tabLogin = document.getElementById('tab-login');
+  const tabRegistro = document.getElementById('tab-registro');
+  if (tabLogin && tabRegistro) {
+    if (vista === 'login') {
+      tabLogin.classList.add('active');
+      tabRegistro.classList.remove('active');
+    } else if (vista === 'registro') {
+      tabRegistro.classList.add('active');
+      tabLogin.classList.remove('active');
+    } else {
+      tabLogin.classList.remove('active');
+      tabRegistro.classList.remove('active');
+    }
+  }
+
   history.replaceState(null, '', vista === 'login' ? location.pathname : '#' + vista);
 }
 

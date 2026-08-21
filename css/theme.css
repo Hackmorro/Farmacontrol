@@ -24,6 +24,44 @@
   --amber:#B45309; --amber-ink:#B45309;
 
   --text-1:#060B14; --text-2:#414754; --text-3:#717786;
+
+  /* Sombras de acento para botones */
+  --shadow-accent: rgba(0,89,187,.32);
+  --shadow-accent-hover: rgba(0,89,187,.40);
+  --shadow-accent-active: rgba(0,50,110,.40);
+  --shadow-accent-active-light: rgba(0,110,220,.35);
+  --shadow-emerald-accent: rgba(0,108,75,.30);
+  --shadow-emerald-accent-hover: rgba(0,108,75,.38);
+}
+
+:root[data-theme="dark"]{
+  /* Superficie base oscura para neumorfismo */
+  --bg-deep:#1e222b; --bg-surface:#232731; --bg-elev:#1e222b;
+  --bg-elev-hover:#252a35; --border-soft:rgba(255,255,255,.05);
+  --surface-translucent:rgba(30,34,43,.82);
+  --tint-1:rgba(255,255,255,.02); --tint-2:rgba(255,255,255,.035); --tint-3:rgba(255,255,255,.05);
+  --disabled-bg:#292e3a; --scroll-thumb:#3f4756; --scroll-thumb-hover:#4d576a;
+
+  /* Sombra neumórfica oscura: sombras y luces sutiles */
+  --shadow-dark:#13161c; --shadow-light:#292e3a;
+
+  /* Marca — azul clínico brillante como acento principal en fondo oscuro */
+  --emerald:#3b82f6; --emerald-dim:#1d4ed8; --emerald-ink:#60a5fa;
+  /* Verde salud brillante */
+  --cyan:#10b981; --cyan-ink:#34d399;
+  --violet:#8b5cf6; --violet-dim:#6d28d9; --violet-ink:#a78bfa;
+  --red:#ef4444; --red-ink:#f87171;
+  --amber:#f59e0b; --amber-ink:#fbbf24;
+
+  --text-1:#f1f5f9; --text-2:#cbd5e1; --text-3:#94a3b8;
+
+  /* Sombras de acento para botones (modo oscuro) */
+  --shadow-accent: rgba(59,130,246,.25);
+  --shadow-accent-hover: rgba(59,130,246,.35);
+  --shadow-accent-active: rgba(29,78,216,.45);
+  --shadow-accent-active-light: rgba(96,165,250,.25);
+  --shadow-emerald-accent: rgba(16,185,129,.20);
+  --shadow-emerald-accent-hover: rgba(16,185,129,.30);
 }
 
 body{ font-family:'Inter',sans-serif; background:var(--bg-deep); color:var(--text-1); }
@@ -36,13 +74,20 @@ body{ font-family:'Inter',sans-serif; background:var(--bg-deep); color:var(--tex
 .grid-glow{ background:var(--bg-deep); }
 
 /* Elevación neumórfica "extruida" (el elemento sobresale de la superficie) */
-.glass, .card{
+.glass, .card, .producto-card, .card-producto{
   background:var(--bg-surface);
   border:none;
   border-radius:1.25rem;
   box-shadow:8px 8px 16px var(--shadow-dark), -8px -8px 16px var(--shadow-light);
+  transition:all .2s ease;
 }
 .glass{ background:rgba(255,255,255,.55); backdrop-filter:blur(20px); border:1px solid rgba(255,255,255,.5); box-shadow:none; }
+[data-theme="dark"] .glass { background:rgba(30,34,43,.55); border:1px solid rgba(255,255,255,.05); box-shadow:none; }
+
+.producto-card:hover, .card-producto:hover {
+  transform:translateY(-3px);
+  box-shadow:12px 12px 20px var(--shadow-dark), -12px -12px 20px var(--shadow-light);
+}
 
 .fade-in{ animation:fadeIn .25s ease; }
 @keyframes fadeIn{ from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);} }
@@ -55,26 +100,41 @@ body{ font-family:'Inter',sans-serif; background:var(--bg-deep); color:var(--tex
 }
 .input-dark:focus{
   outline:none;
-  box-shadow:inset 5px 5px 10px var(--shadow-dark), inset -5px -5px 10px var(--shadow-light), 0 0 0 3px rgba(0,89,187,.15);
+  box-shadow:inset 5px 5px 10px var(--shadow-dark), inset -5px -5px 10px var(--shadow-light), 0 0 0 3px rgba(59,130,246,.15);
 }
 .input-dark::placeholder{ color:var(--text-3); }
 
 /* Botones extruidos con color de marca */
 .btn-primary{
   background:linear-gradient(135deg, var(--emerald), var(--emerald-dim));
-  box-shadow:6px 6px 14px rgba(0,89,187,.32), -6px -6px 14px var(--shadow-light);
+  box-shadow:6px 6px 14px var(--shadow-accent), -6px -6px 14px var(--shadow-light);
   transition:all .2s ease;
+  color: #ffffff !important;
 }
-.btn-primary:hover{ box-shadow:8px 8px 18px rgba(0,89,187,.4), -6px -6px 14px var(--shadow-light); transform:translateY(-1px); }
-.btn-primary:active{ box-shadow:inset 4px 4px 8px rgba(0,50,110,.4), inset -4px -4px 8px rgba(0,110,220,.35); transform:scale(.98); }
+.btn-primary:hover{ box-shadow:8px 8px 18px var(--shadow-accent-hover), -6px -6px 14px var(--shadow-light); transform:translateY(-1px); }
+.btn-primary:active{ box-shadow:inset 4px 4px 8px var(--shadow-accent-active), inset -4px -4px 8px var(--shadow-accent-active-light); transform:scale(.98); }
 .btn-primary:disabled{ opacity:.55; cursor:not-allowed; box-shadow:none; transform:none; }
 
 .btn-emerald{
   background:linear-gradient(135deg, var(--cyan), #00A876);
-  box-shadow:6px 6px 14px rgba(0,108,75,.3), -6px -6px 14px var(--shadow-light);
+  box-shadow:6px 6px 14px var(--shadow-emerald-accent), -6px -6px 14px var(--shadow-light);
   transition:all .2s ease;
+  color: #ffffff !important;
 }
-.btn-emerald:hover{ box-shadow:8px 8px 18px rgba(0,108,75,.38), -6px -6px 14px var(--shadow-light); }
+.btn-emerald:hover{ box-shadow:8px 8px 18px var(--shadow-emerald-accent-hover), -6px -6px 14px var(--shadow-light); }
+
+.btn-soft{
+  background:var(--bg-deep);
+  color:var(--text-2);
+  box-shadow:4px 4px 8px var(--shadow-dark), -4px -4px 8px var(--shadow-light);
+  transition:all .2s ease;
+  border-radius:0.75rem;
+  border: none;
+  outline: none;
+  cursor: pointer;
+}
+.btn-soft:hover{ box-shadow:2px 2px 4px var(--shadow-dark), -2px -2px 4px var(--shadow-light); color:var(--text-1); }
+.btn-soft:active{ box-shadow:inset 3px 3px 6px var(--shadow-dark), inset -3px -3px 6px var(--shadow-light); }
 
 /* Pestañas: extruidas cuando inactivas, hundidas + color de marca cuando activas */
 .tab-btn{
@@ -91,6 +151,6 @@ body{ font-family:'Inter',sans-serif; background:var(--bg-deep); color:var(--tex
 @keyframes spin{ to{ transform:rotate(360deg); } }
 
 .badge-rol{ padding:3px 12px; border-radius:999px; font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.04em; }
-.badge-sin_permisos{ background:rgba(186,26,26,.1); color:var(--red-ink); }
-.badge-cajero{ background:rgba(0,89,187,.1); color:var(--emerald-ink); }
-.badge-administrador{ background:rgba(0,108,75,.12); color:var(--cyan-ink); }
+.badge-sin_permisos{ background:rgba(251,113,133,.15); color:var(--red-ink); }
+.badge-cajero{ background:rgba(59,130,246,.15); color:var(--emerald-ink); }
+.badge-administrador{ background:rgba(16,185,129,.15); color:var(--cyan-ink); }
